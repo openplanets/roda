@@ -24,41 +24,43 @@ public class SQLRangeFilterParameter<EA extends SQLEntityAdapter<E>, E> extends
 		super(entityAdapter, filterParameter);
 	}
 
-	/**
-	 * Gets the SQL condition text for this filter parameter.
-	 */
-	@Override
-	public String getSQLCondition() {
+        /**
+         * Gets the SQL condition text for this filter parameter.
+         */
+        @Override
+        public String getSQLCondition() {
 
-		String condition = null;
+                String condition = null;
 
-		String sqlColumnName = getEntityAdapter().getSQLColumnNameForAttribute(
-				getFilterParameter().getName());
+                String sqlColumnName = getEntityAdapter().getSQLColumnNameForAttribute(
+                                getFilterParameter().getName());
 
-		if (!StringUtils.isBlank(getRangeFilterParameter().getFromValue())) {
+                if (StringUtils.isNotBlank(getRangeFilterParameter().getFromValue())) {
 
-			String sqlFromValue = getEntityAdapter().getSQLValueForAttribute(
-					getFilterParameter().getName(),
-					(Object) getRangeFilterParameter().getFromValue());
+                        String sqlFromValue = getEntityAdapter().getSQLValueForAttribute(
+                                        getFilterParameter().getName(),
+                                        (Object) getRangeFilterParameter().getFromValue());
 
-			condition = sqlColumnName + ">=" + sqlFromValue;
-		}
+                        condition = sqlColumnName + ">=" + sqlFromValue;
+                }
 
-		if (!StringUtils.isBlank(getRangeFilterParameter().getToValue())) {
+                if (StringUtils.isNotBlank(getRangeFilterParameter().getToValue())) {
 
-			if (condition != null) {
-				condition += " AND ";
-			}
+                        if (condition == null) {
+                                condition = "";
+                        } else {
+                                condition += " AND ";
+                        }
 
-			String sqlToValue = getEntityAdapter().getSQLValueForAttribute(
-					getFilterParameter().getName(),
-					(Object) getRangeFilterParameter().getToValue());
+                        String sqlToValue = getEntityAdapter().getSQLValueForAttribute(
+                                        getFilterParameter().getName(),
+                                        (Object) getRangeFilterParameter().getToValue());
 
-			condition += sqlColumnName + "<=" + sqlToValue;
-		}
+                        condition += sqlColumnName + "<=" + sqlToValue;
+                }
 
-		return condition;
-	}
+                return condition;
+        }
 
 	/**
 	 * @see FilterParameterAdapter#canFilterValues()

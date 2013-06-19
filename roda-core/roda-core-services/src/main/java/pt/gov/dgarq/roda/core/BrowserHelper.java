@@ -112,7 +112,17 @@ public class BrowserHelper {
 		this.rodaNAHandleURL = configuration.getString("rodaNAHandleURL");
 	}
 
-	/**
+        /**
+         * Returns the underlying {@link FedoraClientUtility} used to access Fedora
+         * APIs.
+         * 
+         * @return the underlying {@link FedoraClientUtility}.
+         */
+        public FedoraClientUtility getFedoraClientUtility() {
+                return fedoraClientUtility;
+        }
+
+        /**
 	 * Returns the {@link RODAObject} with the given PID.
 	 * 
 	 * @param pid

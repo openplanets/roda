@@ -143,5 +143,36 @@
 			<groupId>pt.gov.dgarq.roda</groupId>
 			<artifactId>fedora-2.2.4-client</artifactId>
 		</dependency>
+		<!-- Report API dependencies -->
+		<dependency>
+			<groupId>pt.keep</groupId>
+			<artifactId>oaicat</artifactId>
+			<version>1.5.61</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.scape_project</groupId>
+			<artifactId>oai-pmh-schema</artifactId>
+			<version>2.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.scape_project</groupId>
+			<artifactId>oai_dc-schema</artifactId>
+			<version>2.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.scape_project</groupId>
+			<artifactId>premis-schema</artifactId>
+			<version>2.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.scape_project</groupId>
+			<artifactId>agent-details-schema</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.scape_project</groupId>
+			<artifactId>eadc-schema</artifactId>
+			<version>1.0.0</version>
+		</dependency>
 	</dependencies>
 </project>

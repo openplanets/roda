@@ -118,12 +118,12 @@ public class ClientLoggerImpl extends RemoteServiceServlet implements
 							.getRemoteHost()),
 					new LogEntryParameter("address", getThreadLocalRequest()
 							.getRemoteAddr()),
-					new LogEntryParameter("user", getThreadLocalRequest()
-							.getRemoteUser()),
+					new LogEntryParameter("user", username),
 					new LogEntryParameter("pagename", pagename) };
 
 			LogEntry logEntry = new LogEntry();
 			logEntry.setAction(LOG_ACTION_WUI_PAGEHIT);
+			logEntry.setDescription(pagename);
 			logEntry.setParameters(parameters);
 			logEntry.setUsername(username);
 

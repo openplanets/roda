@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<name>roda-migrator-services</name>
 	<artifactId>roda-migrator-services</artifactId>
@@ -77,12 +78,6 @@
 			<groupId>pt.gov.dgarq.roda</groupId>
 			<artifactId>roda-common-format-utility</artifactId>
 		</dependency>
-<!--
-		<dependency>
-			<groupId>axis</groupId>
-			<artifactId>axis-jaxrpc</artifactId>
-		</dependency>
--->
 		<dependency>
 			<groupId>axis</groupId>
 			<artifactId>axis-ant</artifactId>
@@ -94,13 +89,6 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-jdk14</artifactId>
-		</dependency>
-		<dependency>
-			<!-- this dependency must be declared after "roda-common-migrator" as 
-				they both have a class named "ConversionResult" declared in the same package 
-				namespace "pt.gov.dgarq.roda.migrator.common.data" -->
-			<groupId>pt.gov.dgarq.roda</groupId>
-			<artifactId>roda-migrator-client</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>pt.gov.dgarq.roda</groupId>

@@ -9,11 +9,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.w3c.util.DateParser;
+
 import pt.gov.dgarq.roda.core.adapter.SortParameterComparator;
 import pt.gov.dgarq.roda.core.adapter.sql.SQLEntityAdapter;
 import pt.gov.dgarq.roda.core.data.LogEntry;
 import pt.gov.dgarq.roda.core.data.LogEntryParameter;
-import pt.gov.dgarq.roda.core.data.SimpleRepresentationPreservationObject;
 
 /**
  * 
@@ -21,11 +22,13 @@ import pt.gov.dgarq.roda.core.data.SimpleRepresentationPreservationObject;
  */
 public class LogEntryAdapter extends SQLEntityAdapter<LogEntry> {
 
-	private static final String[] attributeNames = new String[] { "username",
-			"action", "address", "datetime", "object", "duration" };
+	private static final String[] attributeNames = new String[] { "id",
+			"address", "datetime", "username", "action", "description",
+			"relatedobjectpid", "duration" };
 
-	private static final String[] sqlColumnNames = new String[] { "username",
-			"action", "address", "datetime", "relatedobjectpid", "duration" };
+	private static final String[] sqlColumnNames = new String[] { "id",
+			"address", "datetime", "username", "action", "description",
+			"object", "duration" };
 
 	/**
 	 * @see SortParameterComparator#canSortEntities()
@@ -102,16 +105,20 @@ public class LogEntryAdapter extends SQLEntityAdapter<LogEntry> {
 	public String getSQLValueForAttribute(String attributeName, Object value) {
 		String sqlValue = null;
 
-		if ("username".equalsIgnoreCase(attributeName)) {
-			sqlValue = getSQLString(value);
-		} else if ("action".equalsIgnoreCase(attributeName)) {
+		if ("id".equalsIgnoreCase(attributeName)) {
 			sqlValue = getSQLString(value);
 		} else if ("address".equalsIgnoreCase(attributeName)) {
 			sqlValue = getSQLNullableString(value);
-		} else if ("relatedobjectpid".equalsIgnoreCase(attributeName)) {
-			sqlValue = getSQLNullableString(value);
 		} else if ("datetime".equalsIgnoreCase(attributeName)) {
 			sqlValue = getSQLDatetime(value);
+		} else if ("username".equalsIgnoreCase(attributeName)) {
+			sqlValue = getSQLString(value);
+		} else if ("action".equalsIgnoreCase(attributeName)) {
+			sqlValue = getSQLString(value);
+		} else if ("description".equalsIgnoreCase(attributeName)) {
+			sqlValue = getSQLNullableString(value);
+		} else if ("relatedobjectpid".equalsIgnoreCase(attributeName)) {
+			sqlValue = getSQLNullableString(value);
 		} else if ("duration".equalsIgnoreCase(attributeName)) {
 			sqlValue = getSQLNullableLong(value);
 		} else {
@@ -128,11 +135,12 @@ public class LogEntryAdapter extends SQLEntityAdapter<LogEntry> {
 	public LogEntry getEntity(Connection connection, ResultSet resultSet)
 			throws SQLException {
 
-		LogEntry entry = new LogEntry(resultSet.getString("id"), resultSet
-				.getString("address"), resultSet.getString("datetime"),
+		LogEntry entry = new LogEntry(resultSet.getString("id"),
+				resultSet.getString("address"), DateParser.getIsoDate(resultSet
+						.getTimestamp("datetime")),
 				resultSet.getString("username"), resultSet.getString("action"),
-				null, resultSet.getString("description"), resultSet
-						.getString("object"), resultSet.getLong("duration"));
+				null, resultSet.getString("description"),
+				resultSet.getString("object"), resultSet.getLong("duration"));
 
 		LogEntryParameter[] parameters = getLogActionParameters(connection,
 				entry.getId());
@@ -145,8 +153,7 @@ public class LogEntryAdapter extends SQLEntityAdapter<LogEntry> {
 			String logEntryID) throws SQLException {
 
 		String query = String
-				.format(
-						"SELECT * FROM LogParameters WHERE Logs_id=%1$s ORDER BY position",
+				.format("SELECT * FROM LogParameters WHERE Logs_id=%1$s ORDER BY position",
 						getSQLString(logEntryID));
 
 		LogEntryParameter[] parameters = null;

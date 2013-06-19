@@ -14,6 +14,24 @@
 		<param-value>${roda.home}/config/roda-core.properties</param-value>
 	</context-param>
 
+	<servlet>
+		<description>
+	     This servlet processes OAI verbs. 
+	
+	     The initialization parameter names for this servlet are the
+	     &quot;servlet path&quot; that will be received by this servlet (after the
+	     filename extension is removed).  The corresponding value is the
+	     name of the action class that will be used to process this request.
+		</description>
+		<servlet-name>OAIHandler</servlet-name>
+		<servlet-class>eu.scape_project.roda.report.ReportOAIHandler</servlet-class>
+		<!--<load-on-startup>100</load-on-startup> -->
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>OAIHandler</servlet-name>
+		<url-pattern>/report</url-pattern>
+	</servlet-mapping>
+
 	<!-- <servlet> <display-name>Quartz Initializer Servlet</display-name> <servlet-name>QuartzInitializer</servlet-name> 
 		<servlet-class> org.quartz.ee.servlet.QuartzInitializerServlet </servlet-class> 
 		<init-param> <param-name>start-scheduler-on-load</param-name> <param-value>true</param-value> 
@@ -503,6 +521,28 @@
 		</init-param>
 	</filter>
 
+	<!-- Report API authorization (role based) filter -->
+	<!--
+	<filter>
+		<filter-name>ReportRoleFilter</filter-name>
+		<filter-class>pt.gov.dgarq.roda.servlet.RoleFilter</filter-class>
+		<init-param>
+			<description>
+				The role to access Report API service
+			</description>
+			<param-name>role</param-name>
+			<param-value>misc.report</param-value>
+		</init-param>
+		<init-param>
+			<description>
+				Authentication Realm (default: null)
+			</description>
+			<param-name>realm</param-name>
+			<param-value>RODA Core Services</param-value>
+		</init-param>
+	</filter>
+	-->
+	
 	<!-- GSearch hostname filter -->
 
 	<filter>
@@ -625,7 +665,13 @@
 		<filter-name>LdapAuthenticationFilter</filter-name>
 		<url-pattern>/rest/plan</url-pattern>
 	</filter-mapping>
-
+	<!-- Report API authentication filter -->
+	<!-- 
+	<filter-mapping>
+		<filter-name>LdapAuthenticationFilter</filter-name>
+		<url-pattern>/report</url-pattern>
+	</filter-mapping>
+	-->
 
 	<!-- UserManagement role filter -->
 	<filter-mapping>
@@ -810,6 +856,13 @@
 		<filter-name>StatisticsMonitorRoleFilter</filter-name>
 		<url-pattern>/wsdl/StatisticsMonitor.wsdl</url-pattern>
 	</filter-mapping>
+	<!-- Report API role filter -->
+	<!--
+	<filter-mapping>
+		<filter-name>ReportRoleFilter</filter-name>
+		<url-pattern>/report</url-pattern>
+	</filter-mapping>
+	-->
 
 	<!-- GSearch localhost filter -->
 	<filter-mapping>

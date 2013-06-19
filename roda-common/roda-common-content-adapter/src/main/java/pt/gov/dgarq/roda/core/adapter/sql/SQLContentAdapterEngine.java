@@ -211,7 +211,7 @@ public class SQLContentAdapterEngine<EA extends SQLEntityAdapter<E>, E> extends
 
 					if (sqlParamAdapter != null) {
 						String condition = sqlParamAdapter.getSQLCondition();
-						if (!StringUtils.isBlank(condition)) {
+						if (StringUtils.isNotBlank(condition)) {
 							conditions.add(condition);
 						}
 					}

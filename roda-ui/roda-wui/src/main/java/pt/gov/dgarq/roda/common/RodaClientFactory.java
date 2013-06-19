@@ -215,12 +215,16 @@ public class RodaClientFactory {
 			parameters.add(new LogEntryParameter("port", request
 					.getRemotePort() + ""));
 			parameters.add(new LogEntryParameter("pid", pid));
+
 			LogEntry logEntry = new LogEntry();
 			logEntry.setAction("disseminator." + (hit ? "hit" : "miss") + "."
 					+ disseminator);
+			logEntry.setRelatedObjectPID(pid);
+			logEntry.setUsername(username);
+
 			logEntry.setParameters(parameters
 					.toArray(new LogEntryParameter[parameters.size()]));
-			logEntry.setUsername(username);
+
 			getRodaWuiClient().getLoggerService().addLogEntry(logEntry);
 		} catch (LoginException e) {
 			logger.error("Error sending log", e);
