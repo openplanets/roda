@@ -16,13 +16,5 @@
 		<module>roda-core-plugins</module>
 		<module>roda-fedora-security</module>
 		<module>roda-plugins</module>
-		<module>roda-core-report-api</module>
-		<!--
-		<module>agent-details-schema</module>
-		<module>eadc-schema</module>
-		<module>oai_dc-schema</module>
-		<module>oai-pmh-schema</module>
-		<module>premis-schema</module>
-		-->
 	</modules>
 </project>

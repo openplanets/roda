@@ -4,6 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<name>roda-core-services</name>
 	<artifactId>roda-core-services</artifactId>
+	<version>1.1.0</version>
 	<packaging>war</packaging>
 	<parent>
 		<groupId>pt.gov.dgarq.roda</groupId>
@@ -165,41 +166,9 @@
 		</dependency>
 		<!-- Report API dependencies -->
 		<dependency>
-			<groupId>pt.gov.dgarq.roda</groupId>
-			<artifactId>roda-core-report-api</artifactId>
-			<version>1.1.0</version>
-		</dependency>
-		<!--
-		<dependency>
-			<groupId>pt.keep</groupId>
-			<artifactId>oaicat</artifactId>
-			<version>1.5.61</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.scape_project</groupId>
-			<artifactId>oai-pmh-schema</artifactId>
-			<version>2.0.0</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.scape_project</groupId>
-			<artifactId>oai_dc-schema</artifactId>
-			<version>2.0.0</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.scape_project</groupId>
-			<artifactId>premis-schema</artifactId>
-			<version>2.2.0</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.scape_project</groupId>
-			<artifactId>agent-details-schema</artifactId>
+			<groupId>eu.scape-project</groupId>
+			<artifactId>report-api</artifactId>
 			<version>1.0.0</version>
 		</dependency>
-		<dependency>
-			<groupId>eu.scape_project</groupId>
-			<artifactId>eadc-schema</artifactId>
-			<version>1.0.0</version>
-		</dependency>-->
 	</dependencies>
-	<version>1.1.0</version>
 </project>
