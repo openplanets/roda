@@ -4,7 +4,6 @@
 	<name>roda-core</name>
 	<artifactId>roda-core</artifactId>
 	<packaging>pom</packaging>
-	<version>1.1.0</version>
 	<parent>
 		<groupId>pt.gov.dgarq.roda</groupId>
 		<artifactId>roda</artifactId>
@@ -17,10 +16,13 @@
 		<module>roda-core-plugins</module>
 		<module>roda-fedora-security</module>
 		<module>roda-plugins</module>
+		<module>roda-core-report-api</module>
+		<!--
 		<module>agent-details-schema</module>
 		<module>eadc-schema</module>
 		<module>oai_dc-schema</module>
 		<module>oai-pmh-schema</module>
 		<module>premis-schema</module>
+		-->
 	</modules>
 </project>

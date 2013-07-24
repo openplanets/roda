@@ -24,7 +24,7 @@
 	     name of the action class that will be used to process this request.
 		</description>
 		<servlet-name>OAIHandler</servlet-name>
-		<servlet-class>eu.scape_project.roda.report.ReportOAIHandler</servlet-class>
+		<servlet-class>eu.scape_project.repository.report.ReportOAIHandler</servlet-class>
 		<!--<load-on-startup>100</load-on-startup> -->
 	</servlet>
 	<servlet-mapping>

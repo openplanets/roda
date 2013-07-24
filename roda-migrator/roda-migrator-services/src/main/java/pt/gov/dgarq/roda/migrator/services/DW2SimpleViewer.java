@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.Vector;
 import java.util.regex.Matcher;
 
+import org.apache.axis.utils.XMLUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.lf5.util.StreamUtils;
 
@@ -79,8 +80,8 @@ public class DW2SimpleViewer extends ImageMagickConverter {
 		}
 		gallery.createNewFile();
 
-		String galleryTemplate = new String(StreamUtils
-				.getBytes(DW2SimpleViewer.class.getClassLoader()
+		String galleryTemplate = new String(
+				StreamUtils.getBytes(DW2SimpleViewer.class.getClassLoader()
 						.getResourceAsStream("/gallery.xml")));
 
 		Mets mets = dwMetsHelper.getMets();
@@ -90,8 +91,8 @@ public class DW2SimpleViewer extends ImageMagickConverter {
 		Map<String, String> datastreamIdToCaption = new HashMap<String, String>();
 
 		for (RepresentationFile repFile : rep.getPartFiles()) {
-			datastreamIdToCaption.put(repFile.getId(), repFile
-					.getOriginalName());
+			datastreamIdToCaption.put(repFile.getId(),
+					repFile.getOriginalName());
 		}
 
 		totalImageNumber = dwMetsHelper.getFiles().size();
@@ -109,10 +110,10 @@ public class DW2SimpleViewer extends ImageMagickConverter {
 			title = "";
 		}
 
-		galleryTemplate = galleryTemplate.replaceAll("\\@TITLE", Matcher
-				.quoteReplacement(title));
-		galleryTemplate = galleryTemplate.replaceAll("\\@IMAGES", Matcher
-				.quoteReplacement(imagesXML));
+		galleryTemplate = galleryTemplate.replaceAll("\\@TITLE",
+				Matcher.quoteReplacement(XMLUtils.xmlEncodeString(title)));
+		galleryTemplate = galleryTemplate.replaceAll("\\@IMAGES",
+				Matcher.quoteReplacement(imagesXML));
 
 		PrintWriter printer = new PrintWriter(new OutputStreamWriter(
 				new FileOutputStream(gallery), "UTF-8"));
@@ -217,26 +218,30 @@ public class DW2SimpleViewer extends ImageMagickConverter {
 					getAgent());
 
 		} catch (DownloaderException e) {
-			logger.debug("Exception downloading representation files - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Exception downloading representation files - "
+							+ e.getMessage(), e);
 			throw new ConverterException(
 					"Exception downloading representation files - "
 							+ e.getMessage(), e);
 		} catch (IOException e) {
-			logger.debug("Exception downloading representation files - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Exception downloading representation files - "
+							+ e.getMessage(), e);
 			throw new ConverterException(
 					"Exception downloading representation files - "
 							+ e.getMessage(), e);
 		} catch (MetsMetadataException e) {
-			logger.debug("Exception converting representation files - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Exception converting representation files - "
+							+ e.getMessage(), e);
 			throw new ConverterException(
 					"Exception converting representation files - "
 							+ e.getMessage(), e);
 		} catch (Throwable t) {
-			logger.debug("Exception converting representation files - "
-					+ t.getMessage(), t);
+			logger.debug(
+					"Exception converting representation files - "
+							+ t.getMessage(), t);
 			throw new ConverterException(
 					"Exception converting representation files - "
 							+ t.getMessage(), t);
@@ -263,8 +268,9 @@ public class DW2SimpleViewer extends ImageMagickConverter {
 				convert(originalFile, thumbFile, thumbOptions);
 
 			} catch (CommandException e) {
-				logger.debug("Exception executing convert command - "
-						+ e.getMessage(), e);
+				logger.debug(
+						"Exception executing convert command - "
+								+ e.getMessage(), e);
 				throw new ConverterException(
 						"Exception executing convert command - "
 								+ e.getMessage(), e);
@@ -280,8 +286,7 @@ public class DW2SimpleViewer extends ImageMagickConverter {
 			thumbPartFile.setId(thumbFile.getName());
 			thumbPartFile.setAccessURL(thumbFile.getAbsolutePath());
 			thumbPartFile.setMimetype(FormatUtility.getMimetype(thumbFile
-					.getName()
-					+ this.dstFileExtension));
+					.getName() + this.dstFileExtension));
 			thumbPartFile.setSize(thumbFile.length());
 
 			convertedRepresentation.addPartFile(thumbPartFile);

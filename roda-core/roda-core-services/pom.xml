@@ -4,13 +4,33 @@
 	<modelVersion>4.0.0</modelVersion>
 	<name>roda-core-services</name>
 	<artifactId>roda-core-services</artifactId>
-	<version>1.1.0</version>
 	<packaging>war</packaging>
 	<parent>
 		<groupId>pt.gov.dgarq.roda</groupId>
 		<artifactId>roda-core</artifactId>
 		<version>1.1.0</version>
 	</parent>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>jaxb2-maven-plugin</artifactId>
+				<version>1.5</version>
+				<executions>
+					<execution>
+						<id>xjc</id>
+						<goals>
+							<goal>xjc</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<!-- The name of your generated source package -->
+					<!--<packageName>eu.scape_project.repository</packageName> -->
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 	<dependencies>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
@@ -145,6 +165,12 @@
 		</dependency>
 		<!-- Report API dependencies -->
 		<dependency>
+			<groupId>pt.gov.dgarq.roda</groupId>
+			<artifactId>roda-core-report-api</artifactId>
+			<version>1.1.0</version>
+		</dependency>
+		<!--
+		<dependency>
 			<groupId>pt.keep</groupId>
 			<artifactId>oaicat</artifactId>
 			<version>1.5.61</version>
@@ -173,6 +199,7 @@
 			<groupId>eu.scape_project</groupId>
 			<artifactId>eadc-schema</artifactId>
 			<version>1.0.0</version>
-		</dependency>
+		</dependency>-->
 	</dependencies>
+	<version>1.1.0</version>
 </project>
