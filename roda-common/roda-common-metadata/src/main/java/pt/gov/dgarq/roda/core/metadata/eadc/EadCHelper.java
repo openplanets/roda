@@ -31,6 +31,7 @@ import pt.gov.dgarq.roda.core.metadata.MetadataException;
 import pt.gov.dgarq.roda.core.metadata.MetadataHelperUtility;
 import pt.gov.dgarq.roda.x2008.eadcSchema.Acqinfo;
 import pt.gov.dgarq.roda.x2008.eadcSchema.Arrangement;
+import pt.gov.dgarq.roda.x2008.eadcSchema.AvLevel.Enum;
 import pt.gov.dgarq.roda.x2008.eadcSchema.Bioghist;
 import pt.gov.dgarq.roda.x2008.eadcSchema.C;
 import pt.gov.dgarq.roda.x2008.eadcSchema.Chronitem;
@@ -51,7 +52,6 @@ import pt.gov.dgarq.roda.x2008.eadcSchema.Tgroup;
 import pt.gov.dgarq.roda.x2008.eadcSchema.Thead;
 import pt.gov.dgarq.roda.x2008.eadcSchema.Unitdate;
 import pt.gov.dgarq.roda.x2008.eadcSchema.Unitid;
-import pt.gov.dgarq.roda.x2008.eadcSchema.AvLevel.Enum;
 
 /**
  * This is an helper class for manipulating a EAD-C XML document. It provides
@@ -109,7 +109,12 @@ public class EadCHelper {
 
 		try {
 
-			return new EadCHelper(EadCDocument.Factory.parse(eadcInputStream));
+			EadCDocument document = EadCDocument.Factory.parse(eadcInputStream);
+			if (document.validate()) {
+				return new EadCHelper(document);
+			} else {
+				throw new EadCMetadataException("Error validating XML document");
+			}
 
 		} catch (XmlException e) {
 			logger.debug("Error parsing EAD-C - " + e.getMessage(), e);
@@ -233,14 +238,20 @@ public class EadCHelper {
 		if (did != null) {
 
 			// did/unitid/@repositorycode
-			if (!StringUtils.isBlank(did.getUnitid().getRepositorycode())) {
+			if (StringUtils.isNotBlank(did.getUnitid().getRepositorycode())) {
 
-				String[] values = did.getUnitid().getRepositorycode()
-						.split("-");
+				String repositoryCode = did.getUnitid().getRepositorycode();
 
-				if (values.length == 2) {
-					sdo.setCountryCode(values[0]);
-					sdo.setRepositoryCode(values[1]);
+				int indexOfDivider = repositoryCode.indexOf("-");
+				if (indexOfDivider >= 0) {
+
+					sdo.setCountryCode(repositoryCode.substring(0,
+							indexOfDivider));
+					if (indexOfDivider + 1 < repositoryCode.length()) {
+						sdo.setRepositoryCode(repositoryCode
+								.substring(indexOfDivider + 1));
+					}
+
 				} else {
 					logger.warn("Invalid countryRepositoryCode '"
 							+ did.getUnitid().getRepositorycode() + "'");
@@ -477,8 +488,8 @@ public class EadCHelper {
 						}
 					}
 
-					chronitems[index] = new BioghistChronitem(chronitem
-							.getEvent(), dateInitial, dateFinal);
+					chronitems[index] = new BioghistChronitem(
+							chronitem.getEvent(), dateInitial, dateFinal);
 
 					index++;
 				}
@@ -634,8 +645,8 @@ public class EadCHelper {
 		// }
 
 		// did/unitdate
-		String joinDates2 = joinDates(dObject.getDateInitial(), dObject
-				.getDateFinal());
+		String joinDates2 = joinDates(dObject.getDateInitial(),
+				dObject.getDateFinal());
 		if (joinDates2 != null) {
 			did.addNewUnitdate().setNormal(joinDates2);
 		}
@@ -679,8 +690,8 @@ public class EadCHelper {
 		}
 
 		// did/physdesc/date
-		String joinDates = joinDates(dObject.getPhysdescDateInitial(), dObject
-				.getPhysdescDateFinal());
+		String joinDates = joinDates(dObject.getPhysdescDateInitial(),
+				dObject.getPhysdescDateFinal());
 		if (joinDates != null) {
 			physdesc.addNewDate().setNormal(joinDates);
 		}
@@ -749,8 +760,8 @@ public class EadCHelper {
 
 					Chronitem chronitem = chronlist.addNewChronitem();
 					chronitem.addNewDate().setNormal(
-							joinDates(item.getDateInitial(), item
-									.getDateFinal()));
+							joinDates(item.getDateInitial(),
+									item.getDateFinal()));
 					chronitem.setEvent(item.getEvent());
 				}
 			} // End of bioghist/chronlist
