@@ -2,18 +2,49 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<title>RODA Plan Upload Utility</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>RODA Plan Management Utility</title>
+	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>-->
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 </head>
 <body>
 
-	<form action="rest/plan" method="post" enctype="multipart/form-data">
+	<form action="http://localhost:8080/roda-core/rest/plan-id/reserve" method="get">
 		<fieldset>
-			<legend>Select a Plan to upload</legend>
-			<input type="file" name="plan" /> <input type="submit"
-				value="Upload Plan" />
+			<legend>Reserve a new identifier</legend>
+			<input type="submit" value="Reserve identifier" />
 		</fieldset>
 	</form>
+	
+	<form id="formDeploy" action="http://localhost:8080/roda-core/rest/plan" method="put" enctype="multipart/form-data">
+		<fieldset>
+			<legend>Select a Plan to upload</legend>
+			<label for="formDeployId">Identifier</label>
+			<input id="formDeployId" type="text" name="id" /><br/>
+			<label for="formDeployPlan">Plan file</label>
+			<input id="formDeployPlan" type="file" name="plan" /><br/>
+			<input id="formDeploySubmit" type="button" value="Deploy Plan" onclick="submitFormDeploy()" />
+		</fieldset>
+	</form>
+	
+	<script type="text/javascript">
+
+	function submitFormDeploy(){
+	    
+		var form_url = $("#formDeploy").attr("action");
+	    
+		alert("Before - action=" + form_url);
+	    
+	    //changing the action to google.com
+	    $("#formDeploy").attr("action", 'http://localhost:8080/roda-core/rest/plan/' + $("#formDeployId").val());
+	    
+	    alert("After - action = "+$("#formDeploy").attr("action"));
+	    
+	    //submit the form
+	    $("#formDeploy").submit();
+	}
+	
+	</script>
 
 </body>
 </html>

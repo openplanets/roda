@@ -155,8 +155,35 @@ all the functionality prescribed by the OAIS reference model.</description>
 			<modules>
 				<module>roda-common</module>
 				<module>roda-client</module>
-				<module>roda-core</module>
+				<module>roda-core/fedora-client-utility</module>
+				<module>roda-core/roda-fedora-security</module>
+				<module>roda-core/roda-core-plugins</module>
+				<module>roda-core/roda-core-services</module>
 				<module>roda-migrator/roda-migrator-client</module>
+			</modules>
+		</profile>
+		<profile>
+			<id>core-services</id>
+			<modules>
+				<!--<module>roda-common</module>-->
+				<module>roda-common/roda-common-utils</module>
+				<module>roda-common/roda-common-certification</module>
+				<module>roda-common/roda-common-format-utility</module>
+				<module>roda-common/roda-common-content-adapter</module>
+				<module>roda-common/roda-common-data</module>
+				<module>roda-common/roda-common-db</module>
+				<module>roda-common/roda-common-ingest</module>
+				<module>roda-common/roda-common-metadata</module>
+				<!--<module>roda-common-convert-db</module>-->
+				<!--<module>roda-common-migrator</module>-->
+				<module>roda-common/roda-common-plugins</module>
+				<module>roda-common/roda-common-servlet-security</module>
+				<module>roda-common/roda-common-sip-utility</module>
+				<!--<module>roda-core</module>-->
+				<module>roda-core/fedora-client-utility</module>
+				<module>roda-core/roda-fedora-security</module>
+				<module>roda-core/roda-core-plugins</module>
+				<module>roda-core/roda-core-services</module>
 			</modules>
 		</profile>
 		<profile>
@@ -395,7 +422,7 @@ all the functionality prescribed by the OAIS reference model.</description>
 			<dependency>
 				<groupId>commons-dbcp</groupId>
 				<artifactId>commons-dbcp</artifactId>
-				<version>1.2.1</version>
+				<version>1.4</version>
 			</dependency>
 			<dependency>
 				<groupId>commons-discovery</groupId>

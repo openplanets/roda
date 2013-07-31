@@ -170,5 +170,10 @@
 			<artifactId>report-api</artifactId>
 			<version>1.0.0</version>
 		</dependency>
+		<dependency>
+			<groupId>fr.prados</groupId>
+			<artifactId>XPath4SAX</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 </project>

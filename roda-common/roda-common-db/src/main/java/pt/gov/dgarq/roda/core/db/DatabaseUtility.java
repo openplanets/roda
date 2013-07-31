@@ -2,9 +2,9 @@ package pt.gov.dgarq.roda.core.db;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Date;
 
 import org.apache.log4j.Logger;
@@ -157,13 +157,16 @@ public class DatabaseUtility<EA extends SQLEntityAdapter<E>, E> {
 		Connection connection = getConnection();
 		connection.setAutoCommit(false);
 
-		Statement statement = connection.createStatement();
+		// Statement statement = null;
+		PreparedStatement statement = null;
 
 		try {
 
 			String selectQuery = String.format("SELECT id FROM %s",
 					sequence_table);
-			ResultSet resultSet = statement.executeQuery(selectQuery);
+			statement = connection.prepareStatement(selectQuery);
+
+			ResultSet resultSet = statement.executeQuery();
 
 			long lastID;
 			if (resultSet.first()) {
@@ -171,8 +174,11 @@ public class DatabaseUtility<EA extends SQLEntityAdapter<E>, E> {
 				lastID = resultSet.getLong("id");
 				lastID++;
 
-				statement.executeUpdate(String.format("UPDATE %s SET id=%d",
-						sequence_table, lastID));
+				statement = connection.prepareStatement(String.format(
+						"UPDATE %s SET id=?", sequence_table));
+				statement.setLong(1, lastID);
+
+				statement.executeUpdate();
 
 			} else {
 				throw new SQLException(sequence_table

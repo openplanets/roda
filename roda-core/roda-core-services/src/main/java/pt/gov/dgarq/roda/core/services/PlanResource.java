@@ -1,3 +1,4 @@
+/*
 package pt.gov.dgarq.roda.core.services;
 
 import java.io.File;
@@ -58,3 +59,4 @@ public class PlanResource {
 
   }
 }
+*/
