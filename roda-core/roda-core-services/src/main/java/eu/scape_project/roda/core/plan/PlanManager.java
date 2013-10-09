@@ -101,10 +101,21 @@ public enum PlanManager {
 	}
 
 	public Plan getPlan(String id) throws NoSuchPlanException, PlanException {
+		logger.trace("getPlan(id=" + id + ")");
+
 		File planMetadataFile = getPlanMetadataFile(id);
+
+		logger.debug("getPlan(id=" + id + ") plan file should be "
+				+ planMetadataFile.getAbsolutePath());
+
 		if (planMetadataFile.exists()) {
 			return Plan.loadPlan(planMetadataFile);
 		} else {
+
+			logger.warn("getPlan(id=" + id + "): plan file doesn't exist: "
+					+ planMetadataFile.getAbsolutePath()
+					+ ". Throwing NoSuchPlanException");
+
 			throw new NoSuchPlanException("Plan " + id + " could not be found");
 		}
 	}

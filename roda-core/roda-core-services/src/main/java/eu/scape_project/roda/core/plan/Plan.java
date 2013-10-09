@@ -535,7 +535,7 @@ public class Plan {
 					logger.info("SHA1 checksum: " + signature);
 				}
 
-				long start = System.currentTimeMillis();
+				// long start = System.currentTimeMillis();
 				// Document planDocument = getPlanDocument(planDataFile);
 				// logger.debug("Successfully parsed plan");
 				long afterRead = System.currentTimeMillis();
@@ -543,9 +543,9 @@ public class Plan {
 				extractValuesFromPlan(planDataFile);
 				long afterXpath = System.currentTimeMillis();
 
-				logger.debug("XML parse duration: " + (afterRead - start)
-						+ " ms");
-				logger.debug("XPath extraction duration: "
+				// logger.debug("XML parse duration: " + (afterRead - start) +
+				// " ms");
+				logger.debug("XPath values extraction duration: "
 						+ (afterXpath - afterRead) + " ms");
 
 				// Store updated plan metadata
@@ -763,17 +763,17 @@ public class Plan {
 						if (xpathSelectUIDs.equals(xpath)) {
 
 							fileURLs.add(node.getNodeValue());
-							logger.debug("Added file: " + node.getNodeValue());
+							logger.info("Added file: " + node.getNodeValue());
 
 						} else if (xpathSelectAuthor.equals(xpath)) {
 
 							setAuthor(node.getNodeValue());
-							logger.debug("Author: " + getAuthor());
+							logger.info("Author: " + getAuthor());
 
 						} else if (xpathSelectDescription.equals(xpath)) {
 
 							setDescription(node.getNodeValue());
-							logger.debug("Description: " + getDescription());
+							logger.info("Description: " + getDescription());
 
 						} else {
 							logger.warn("Ignoring unknown SAXXPath " + xpath);

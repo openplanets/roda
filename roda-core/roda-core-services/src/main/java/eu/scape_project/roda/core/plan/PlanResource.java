@@ -2,6 +2,7 @@ package eu.scape_project.roda.core.plan;
 
 import java.io.InputStream;
 
+import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -62,5 +63,33 @@ public class PlanResource {
 					.type(MediaType.TEXT_PLAIN).build();
 		}
 
+	}
+
+	@GET
+	public Response getPlan(@PathParam("id") final String id) {
+		try {
+
+			Plan plan = PlanManager.INSTANCE.getPlan(id);
+			InputStream dataInputStream = plan.getDataInputStream();
+
+			logger.info("Plan "
+					+ id
+					+ " exists and data data file successfully open. Sending response...");
+
+			return Response.ok().entity(dataInputStream)
+					.header("Content-Type", MediaType.TEXT_XML).build();
+
+		} catch (NoSuchPlanException e) {
+			logger.error("Plan " + id + " doesn't exist - " + e.getMessage(), e);
+			return Response
+					.status(Response.Status.NOT_FOUND)
+					.entity("Plan " + id + " doesn't exist - " + e.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
+		} catch (PlanException e) {
+			logger.error("Couldn't retrieve plan - " + e.getMessage(), e);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Couldn't retrieve plan - " + e.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
+		}
 	}
 }
