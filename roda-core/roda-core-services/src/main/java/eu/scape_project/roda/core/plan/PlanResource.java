@@ -74,7 +74,7 @@ public class PlanResource {
 
 			logger.info("Plan "
 					+ id
-					+ " exists and data data file successfully open. Sending response...");
+					+ " exists and data file successfully open. Sending response...");
 
 			return Response.ok().entity(dataInputStream)
 					.header("Content-Type", MediaType.TEXT_XML).build();

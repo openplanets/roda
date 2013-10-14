@@ -175,5 +175,11 @@
 			<artifactId>XPath4SAX</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		<!-- Plan Management API dependencies -->
+		<dependency>
+			<groupId>eu.scape-project.model</groupId>
+			<artifactId>scape-platform-datamodel</artifactId>
+			<version>0.1.4-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 </project>

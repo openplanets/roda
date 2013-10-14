@@ -18,7 +18,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -44,6 +48,8 @@ import org.xml.sax.SAXException;
 import pt.gov.dgarq.roda.util.JAXBUtility;
 import at.ac.tuwien.ifs.dp.plato.ObjectFactory;
 import at.ac.tuwien.ifs.dp.plato.Plans;
+import eu.scape_project.model.plan.PlanExecutionState;
+import eu.scape_project.model.plan.PlanExecutionStateCollection;
 import fr.prados.xpath4sax.SAXXPath;
 import fr.prados.xpath4sax.XPathSyntaxException;
 import fr.prados.xpath4sax.XPathXMLHandler;
@@ -333,6 +339,110 @@ public class Plan {
 		return getId() + ".data";
 	}
 
+	private String getExecutionStatesFilename() {
+		return getId() + ".states";
+	}
+
+	/**
+	 * Retrieves the collection of current execution states.
+	 * 
+	 * @return a {@link PlanExecutionStateCollection} of
+	 *         {@link PlanExecutionState}s.
+	 * @throws PlanException
+	 */
+	public PlanExecutionStateCollection getPlanExecutionStateCollection()
+			throws PlanException {
+		PlanExecutionStateCollection stateCollection = null;
+
+		InputStream statesInputStream = getExecutionStatesInputStream();
+		if (statesInputStream == null) {
+
+			logger.debug("Execution states input stream is null. Creating new PlanExecutionStateCollection");
+
+			// There's no states yet! Create a an empty set.
+			stateCollection = new PlanExecutionStateCollection(getId(),
+					new ArrayList<PlanExecutionState>());
+
+		} else {
+			// Let's parse the current states file
+
+			logger.debug("Execution states input stream is not null. Parsing PlanExecutionStateCollection");
+
+			try {
+
+				JAXBContext jc = JAXBContext
+						.newInstance(PlanExecutionStateCollection.class);
+				Unmarshaller unmarshaller = jc.createUnmarshaller();
+				stateCollection = (PlanExecutionStateCollection) unmarshaller
+						.unmarshal(statesInputStream);
+
+			} catch (JAXBException e) {
+				logger.error(
+						"Error parsing Plan's execution states - "
+								+ e.getMessage(), e);
+				throw new PlanException(
+						"Error parsing Plan's execution states - "
+								+ e.getMessage(), e);
+			} finally {
+				try {
+					statesInputStream.close();
+				} catch (IOException e) {
+					logger.warn(
+							"Error closing states InputStream - "
+									+ e.getMessage() + " - Ignoring...", e);
+				}
+			}
+
+		}
+
+		return stateCollection;
+	}
+
+	/**
+	 * Adds a new execution state to the Plan.
+	 * 
+	 * @param state
+	 *            the {@link PlanExecutionState} to add.
+	 * @throws PlanException
+	 */
+	public void addPlanExecutionState(PlanExecutionState state)
+			throws PlanException {
+
+		Writer statesWriter = null;
+
+		try {
+			PlanExecutionStateCollection statesCollection = getPlanExecutionStateCollection();
+			statesCollection.getExecutionStates().add(state);
+
+			JAXBElement<PlanExecutionStateCollection> jaxbElementExecutionStates = new JAXBElement<PlanExecutionStateCollection>(
+					new QName("http://scape-project.eu/model",
+							"plan-execution-states"),
+					PlanExecutionStateCollection.class, statesCollection);
+
+			statesWriter = getExecutionStatesWriter();
+
+			JAXBUtility.marshal(jaxbElementExecutionStates, true, false, null,
+					"eu.scape_project.model.plan", statesWriter);
+
+		} catch (JAXBException e) {
+			logger.error(
+					"Error parsing Plan's execution states - " + e.getMessage(),
+					e);
+			throw new PlanException("Error writting Plan's execution states - "
+					+ e.getMessage(), e);
+		} finally {
+			try {
+				if (statesWriter != null) {
+					statesWriter.close();
+				}
+			} catch (IOException e) {
+				logger.warn(
+						"Error closing states OutputStream - " + e.getMessage()
+								+ " - Ignoring...", e);
+			}
+		}
+	}
+
 	/**
 	 * Returns an {@link InputStream} to the Plan's data if it exists.
 	 * 
@@ -359,6 +469,100 @@ public class Plan {
 			}
 
 			return stream;
+		}
+	}
+
+	/**
+	 * Returns an {@link InputStream} to the Plan's states if it exists.
+	 * 
+	 * @return an {@link InputStream} to the Plan's states if it exists or
+	 *         <code>null</code> otherwise.
+	 * @throws PlanException
+	 *             if the Plan directory is not set
+	 */
+	private InputStream getExecutionStatesInputStream() throws PlanException {
+		if (getDirectory() == null) {
+			throw new PlanException("Plan directory is not set");
+		} else {
+			File statesFile = new File(getDirectory(),
+					getExecutionStatesFilename());
+
+			InputStream stream = null;
+			if (statesFile.exists()) {
+				logger.debug("States file " + statesFile + " already exists.");
+				try {
+
+					stream = new FileInputStream(statesFile);
+
+				} catch (FileNotFoundException e) {
+					logger.debug("Plan " + getId()
+							+ " doesn't have states yet - " + e.getMessage(), e);
+				}
+			} else {
+				logger.debug("States file " + statesFile
+						+ " doesn't exist. Returning null");
+			}
+
+			return stream;
+		}
+	}
+
+	/**
+	 * Returns an {@link InputStream} to the Plan's states if it exists.
+	 * 
+	 * @return an {@link InputStream} to the Plan's states if it exists or
+	 *         <code>null</code> otherwise.
+	 * @throws PlanException
+	 *             if the Plan directory is not set
+	 */
+	private FileOutputStream getExecutionStatesOutputStream()
+			throws PlanException {
+		if (getDirectory() == null) {
+			throw new PlanException("Plan directory is not set");
+		} else {
+			File statesFile = new File(getDirectory(),
+					getExecutionStatesFilename());
+
+			try {
+
+				return new FileOutputStream(statesFile);
+
+			} catch (FileNotFoundException e) {
+				logger.debug("Error opening execution states file "
+						+ statesFile + " for writting - " + e.getMessage(), e);
+				throw new PlanException("Error opening execution states file "
+						+ statesFile + " for writting - " + e.getMessage(), e);
+			}
+
+		}
+	}
+
+	/**
+	 * Returns an {@link InputStream} to the Plan's states if it exists.
+	 * 
+	 * @return an {@link InputStream} to the Plan's states if it exists or
+	 *         <code>null</code> otherwise.
+	 * @throws PlanException
+	 *             if the Plan directory is not set
+	 */
+	private Writer getExecutionStatesWriter() throws PlanException {
+		if (getDirectory() == null) {
+			throw new PlanException("Plan directory is not set");
+		} else {
+			File statesFile = new File(getDirectory(),
+					getExecutionStatesFilename());
+
+			try {
+
+				return new FileWriter(statesFile);
+
+			} catch (IOException e) {
+				logger.debug("Error opening execution states file "
+						+ statesFile + " for writting - " + e.getMessage(), e);
+				throw new PlanException("Error opening execution states file "
+						+ statesFile + " for writting - " + e.getMessage(), e);
+			}
+
 		}
 	}
 
