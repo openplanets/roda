@@ -181,5 +181,34 @@
 			<artifactId>scape-platform-datamodel</artifactId>
 			<version>0.1.4-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-core</artifactId>
+			<version>4.4.0</version>
+		</dependency>
+		<dependency>
+			<artifactId>lucene-analyzers-common</artifactId>
+			<groupId>org.apache.lucene</groupId>
+			<type>jar</type>
+			<version>4.4.0</version>
+		</dependency>
+		<dependency>
+			<artifactId>lucene-queries</artifactId>
+			<groupId>org.apache.lucene</groupId>
+			<type>jar</type>
+			<version>4.4.0</version>
+		</dependency>
+		<dependency>
+			<artifactId>lucene-queryparser</artifactId>
+			<groupId>org.apache.lucene</groupId>
+			<type>jar</type>
+			<version>4.4.0</version>
+		</dependency>
+		<dependency>
+			<artifactId>lucene-facet</artifactId>
+			<groupId>org.apache.lucene</groupId>
+			<type>jar</type>
+			<version>4.4.0</version>
+		</dependency>
 	</dependencies>
 </project>

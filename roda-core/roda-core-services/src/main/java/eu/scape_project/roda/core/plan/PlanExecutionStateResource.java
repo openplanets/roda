@@ -35,7 +35,7 @@ import eu.scape_project.model.plan.PlanExecutionState;
  * @author Rui Castro
  * 
  */
-@Path("/plan-execution-state")
+@Path("plan-execution-state")
 public class PlanExecutionStateResource {
 	static final private Logger logger = Logger
 			.getLogger(PlanExecutionStateResource.class);

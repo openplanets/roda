@@ -8,12 +8,11 @@ import javax.ws.rs.core.Response;
 
 import org.apache.log4j.Logger;
 
-@Path("plan-id")
+@Path("plan-id/reserve")
 public class PlanIdResource {
 	static final private Logger logger = Logger.getLogger(PlanIdResource.class);
 
 	@GET
-	@Path("reserve")
 	@Produces(MediaType.TEXT_PLAIN)
 	public Response reserve() {
 		logger.trace("reserve()");

@@ -35,6 +35,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.scape_project.roda.core.plan.PlanManager;
+
 /**
  * This class listens for
  * {@link RodaWebApplication#contextInitialized(ServletContextEvent)} and
@@ -175,6 +177,10 @@ public class RodaWebApplication implements ServletContextListener {
 					}
 				}
 			}
+			
+			PlanManager.INSTANCE.start();
+			logger.info("PlanManager started");
+			
 			logger.info("RODA Core started");
 
 		} catch (Throwable t) {
@@ -291,6 +297,8 @@ public class RodaWebApplication implements ServletContextListener {
 		if (this.pluginManager != null) {
 			this.pluginManager.shutdown();
 			this.pluginManager = null;
+
+			logger.info("RODA Core PluginManager stopped");
 		}
 
 		if (this.scheduler != null) {
@@ -300,12 +308,18 @@ public class RodaWebApplication implements ServletContextListener {
 				this.scheduler.stop();
 				this.scheduler = null;
 
+				logger.info("RODA Core Scheduler stopped");
+
 			} catch (RODASchedulerException e) {
 				logger.error(
-						"Error stopping RODA Scheduler - " + e.getMessage(), e);
+						"Error stopping RODA Core Scheduler - "
+								+ e.getMessage(), e);
 			}
 
 		}
+
+		PlanManager.INSTANCE.stop();
+		logger.info("RODA Core PlanManager stopped");
 
 		logger.info("RODA Core stopped");
 	}

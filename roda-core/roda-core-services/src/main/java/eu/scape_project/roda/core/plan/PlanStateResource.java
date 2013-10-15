@@ -28,7 +28,7 @@ import org.apache.log4j.Logger;
  * 
  * @author Rui Castro
  */
-@Path("/plan-state")
+@Path("plan-state")
 public class PlanStateResource {
 	static final private Logger logger = Logger
 			.getLogger(PlanStateResource.class);
@@ -93,6 +93,8 @@ public class PlanStateResource {
 
 				plan.setEnabled(!plan.isEnabled());
 				plan.store();
+
+				PlanManager.INSTANCE.addPlanToIndex(plan);
 
 				logger.info("Plan status updated to " + state);
 			}

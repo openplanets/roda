@@ -48,6 +48,7 @@ public class PlanResource {
 
 			Plan plan = PlanManager.INSTANCE.getPlan(id);
 			plan.storeData(src);
+			PlanManager.INSTANCE.addPlanToIndex(plan);
 
 			logger.info("Plan successfully deployed to "
 					+ uriInfo.getRequestUri().toASCIIString());
