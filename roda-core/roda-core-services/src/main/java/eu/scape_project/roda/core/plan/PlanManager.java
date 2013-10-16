@@ -68,9 +68,9 @@ public enum PlanManager {
 	 */
 	private IndexSearcher indexSearcher;
 
-	final static private String[] planFields = new String[] { "id",
-			"idReserveDate", "idReserveUser", "enabled", "deployDate",
-			"deployUser", "author", "description", "numberOfFiles" };
+	final static protected String[] planFields = new String[] { "ID",
+			"IDReserveDate", "IDReserveUser", "Enabled", "DeployDate",
+			"DeployUser", "Author", "Description", "NumberOfFiles" };
 
 	/**
 	 * Creates a new {@link PlanManager}.
@@ -83,11 +83,19 @@ public enum PlanManager {
 	public synchronized void start() throws PlanException {
 		logger.trace("start()");
 
-		createIndex();
-		logger.debug("Plan index created/opened");
+		try {
 
-		int count = reindexPlans();
-		logger.debug(count + " plans reindexed");
+			getIndexWriter(true);
+			logger.info("Plan index created/opened successfully");
+
+		} catch (IOException e) {
+			logger.debug("Error creating/opening index - " + e.getMessage(), e);
+			throw new PlanException("Error creating/opening index - "
+					+ e.getMessage(), e);
+		}
+
+		// int count = reindexPlans();
+		// logger.debug(count + " plans reindexed");
 	}
 
 	public synchronized void stop() {
@@ -214,18 +222,25 @@ public enum PlanManager {
 		return new File(getPlansDirectory(), "index");
 	}
 
-	private synchronized void createIndex() {
-		logger.trace("createIndex()");
+	private synchronized IndexWriter getIndexWriter() throws PlanException,
+			IOException {
+		logger.trace("getIndexWriter()");
+		return getIndexWriter(false);
+	}
 
-		try {
+	private synchronized IndexWriter getIndexWriter(boolean create)
+			throws PlanException, IOException {
+		logger.trace("getIndexWriter(create=" + create + ")");
 
-			boolean create = true;
+		if (this.indexWriter == null) {
+
 			File indexDirFile = getIndexDirectory();
 			if (indexDirFile.exists() && indexDirFile.isDirectory()) {
 				create = false;
+				logger.info("Index already exists. Not creating again.");
 			}
 
-			Directory dir = FSDirectory.open(indexDirFile);
+			Directory dir = FSDirectory.open(getIndexDirectory());
 			Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_44);
 			IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_44,
 					analyzer);
@@ -234,36 +249,19 @@ public enum PlanManager {
 				// Create a new index in the directory, removing any
 				// previously indexed documents:
 				iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+			} else {
+				iwc.setOpenMode(IndexWriterConfig.OpenMode.APPEND);
 			}
 
 			this.indexWriter = new IndexWriter(dir, iwc);
-			this.indexWriter.commit();
 
-			logger.info("Plan index created successfully");
+			if (create) {
+				this.indexWriter.commit();
+				logger.debug("Plan index created successfully");
+			} else {
+				logger.debug("Plan index opened successfully");
+			}
 
-		} catch (IOException e) {
-			logger.error("Error creating Plans index - " + e.getMessage(), e);
-		} catch (PlanException e) {
-			logger.error("Error creating Plans index - " + e.getMessage(), e);
-		}
-
-	}
-
-	private synchronized IndexWriter getIndexWriter() throws PlanException,
-			IOException {
-		logger.trace("getIndexWriter()");
-
-		if (this.indexWriter == null) {
-
-			Directory dir = FSDirectory.open(getIndexDirectory());
-
-			Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_44);
-
-			IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_44,
-					analyzer);
-			iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-
-			this.indexWriter = new IndexWriter(dir, iwc);
 		}
 
 		return this.indexWriter;
@@ -289,64 +287,75 @@ public enum PlanManager {
 
 	public void addPlanToIndex(Plan plan) throws PlanException {
 		logger.trace("addPlanToIndex(" + plan + ")");
+		addPlanToIndex(plan, true, true);
+	}
 
-		try {
+	public void addPlanToIndex(Plan plan, boolean deleteExisting, boolean commit)
+			throws PlanException {
+		logger.trace("addPlanToIndex(plan=" + plan + ", deleteExisting="
+				+ deleteExisting + ", commit=" + commit + ")");
 
-			logger.debug("Deleting plan from index if already exists");
-			getIndexWriter().deleteDocuments(
-					new TermQuery(new Term("id", plan.getId())));
+		if (deleteExisting) {
+			try {
 
-		} catch (IOException e) {
-			logger.warn(
-					"Error trying to delete existing plan - " + e.getMessage(),
-					e);
+				logger.debug("Deleting plan from index if already exists");
+				getIndexWriter().deleteDocuments(
+						new TermQuery(new Term("ID", plan.getId())));
+
+			} catch (IOException e) {
+				logger.warn(
+						"Error trying to delete existing plan - "
+								+ e.getMessage(), e);
+			}
 		}
 
 		Document document = new Document();
 
-		document.add(new StringField("id", plan.getId(), Field.Store.YES));
+		document.add(new StringField("ID", plan.getId(), Field.Store.YES));
 
 		if (plan.getIdReserveDate() != null) {
-			document.add(new StringField("idReserveDate", DateTools
+			document.add(new StringField("IDReserveDate", DateTools
 					.dateToString(plan.getIdReserveDate(),
 							Resolution.MILLISECOND), Field.Store.YES));
 		}
 
 		if (StringUtils.isNotBlank(plan.getIdReserveUser())) {
-			document.add(new StringField("idReserveUser", plan
+			document.add(new StringField("IDReserveUser", plan
 					.getIdReserveUser(), Field.Store.YES));
 		}
 
-		document.add(new StringField("enabled", new Boolean(plan.isEnabled())
+		document.add(new StringField("Enabled", new Boolean(plan.isEnabled())
 				.toString(), Field.Store.YES));
 
 		if (plan.getDeployDate() != null) {
-			document.add(new StringField("deployDate", DateTools.dateToString(
+			document.add(new StringField("DeployDate", DateTools.dateToString(
 					plan.getDeployDate(), Resolution.MILLISECOND),
 					Field.Store.YES));
 		}
 		if (StringUtils.isNotBlank(plan.getDeployUser())) {
-			document.add(new StringField("deployUser", plan.getDeployUser(),
+			document.add(new StringField("DeployUser", plan.getDeployUser(),
 					Field.Store.YES));
 		}
 
 		if (StringUtils.isNotBlank(plan.getAuthor())) {
-			document.add(new StringField("author", plan.getAuthor(),
+			document.add(new StringField("Author", plan.getAuthor(),
 					Field.Store.YES));
 		}
 
 		if (StringUtils.isNotBlank(plan.getDescription())) {
-			document.add(new TextField("description", plan.getDescription(),
+			document.add(new TextField("Description", plan.getDescription(),
 					Field.Store.YES));
 		}
 
-		document.add(new LongField("numberOfFiles", plan.getNumberOfFiles(),
+		document.add(new LongField("NumberOfFiles", plan.getNumberOfFiles(),
 				Field.Store.YES));
 
 		try {
 
 			getIndexWriter().addDocument(document);
-			getIndexWriter().commit();
+			if (commit) {
+				getIndexWriter().commit();
+			}
 
 			logger.info("Plan " + plan.getId() + " successfully added to index");
 
@@ -390,7 +399,7 @@ public enum PlanManager {
 				try {
 
 					Document doc = getIndexSearcher().doc(hits[i].doc);
-					results.add(getPlan(doc.get("id")));
+					results.add(getPlan(doc.get("ID")));
 
 				} catch (NoSuchPlanException e) {
 					logger.warn("Error getting Plan from Lucene document "
@@ -442,7 +451,7 @@ public enum PlanManager {
 				try {
 
 					Document doc = getIndexSearcher().doc(hits[i].doc);
-					results.add(getPlan(doc.get("id")));
+					results.add(getPlan(doc.get("ID")));
 
 				} catch (NoSuchPlanException e) {
 					logger.warn("Error getting Plan from Lucene document "
@@ -469,6 +478,20 @@ public enum PlanManager {
 	public int reindexPlans() throws PlanException {
 		logger.trace("reindexPlans()");
 
+		logger.info("Reindexing all plans");
+
+		try {
+
+			getIndexWriter().deleteAll();
+			logger.info("Deleted all records from index");
+
+		} catch (IOException e) {
+			logger.debug(
+					"Error deleting all records from index - " + e.getMessage(),
+					e);
+			logger.warn("Ignoring exception in deleteAll() and continuing adding Plans to index");
+		}
+
 		File[] planFiles = getPlansDirectory().listFiles(new FilenameFilter() {
 			@Override
 			public boolean accept(File dir, String name) {
@@ -484,7 +507,8 @@ public enum PlanManager {
 
 			try {
 
-				addPlanToIndex(PlanManager.INSTANCE.getPlan(planId));
+				addPlanToIndex(PlanManager.INSTANCE.getPlan(planId), false,
+						false);
 				count++;
 
 			} catch (NoSuchPlanException e) {
@@ -498,6 +522,20 @@ public enum PlanManager {
 			}
 		}
 
-		return count;
+		try {
+
+			getIndexWriter().commit();
+			logger.info(count + " plans indexed");
+
+			return count;
+
+		} catch (IOException e) {
+			logger.debug(
+					"Error commiting changes after reindex " + e.getMessage(),
+					e);
+			throw new PlanException("Error commiting changes after reindex "
+					+ e.getMessage(), e);
+		}
+
 	}
 }

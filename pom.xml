@@ -60,6 +60,11 @@ all the functionality prescribed by the OAIS reference model.</description>
 			<name>Apache SVN</name>
 			<url>http://svn.apache.org/repos/asf/servicemix/m2-repo</url>
 		</repository>
+		<repository>
+			<id>IndexData</id>
+			<name>Index Data Repository</name>
+			<url>http://maven.indexdata.com/</url>
+		</repository>
 	</repositories>
 	<ciManagement>
 		<system>Jenkins</system>
