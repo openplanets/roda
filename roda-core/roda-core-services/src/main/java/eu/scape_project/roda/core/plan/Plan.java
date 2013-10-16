@@ -23,22 +23,15 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.util.DateParser;
 import org.w3c.util.InvalidDateException;
@@ -331,11 +324,11 @@ public class Plan {
 		}
 	}
 
-	public String getMetadataFilename() {
+	private String getMetadataFilename() {
 		return getId() + ".metadata";
 	}
 
-	public String getDataFilename() {
+	private String getDataFilename() {
 		return getId() + ".data";
 	}
 
@@ -504,36 +497,6 @@ public class Plan {
 			}
 
 			return stream;
-		}
-	}
-
-	/**
-	 * Returns an {@link InputStream} to the Plan's states if it exists.
-	 * 
-	 * @return an {@link InputStream} to the Plan's states if it exists or
-	 *         <code>null</code> otherwise.
-	 * @throws PlanException
-	 *             if the Plan directory is not set
-	 */
-	private FileOutputStream getExecutionStatesOutputStream()
-			throws PlanException {
-		if (getDirectory() == null) {
-			throw new PlanException("Plan directory is not set");
-		} else {
-			File statesFile = new File(getDirectory(),
-					getExecutionStatesFilename());
-
-			try {
-
-				return new FileOutputStream(statesFile);
-
-			} catch (FileNotFoundException e) {
-				logger.debug("Error opening execution states file "
-						+ statesFile + " for writting - " + e.getMessage(), e);
-				throw new PlanException("Error opening execution states file "
-						+ statesFile + " for writting - " + e.getMessage(), e);
-			}
-
 		}
 	}
 
@@ -829,99 +792,6 @@ public class Plan {
 					+ e.getMessage(), e);
 		}
 
-	}
-
-	/**
-	 * Parses the plan XML file and returns a {@link Document} with the plan.
-	 * 
-	 * @param planFile
-	 *            the File with the plan.
-	 * @return the {@link Document} containing the plan.
-	 * @throws PlanException
-	 *             if an error occurs reading, parsing or creating the
-	 *             {@link Document} from the plan XML file.
-	 */
-	private Document getPlanDocument(final File planFile) throws PlanException {
-
-		final DocumentBuilderFactory factory = DocumentBuilderFactory
-				.newInstance();
-
-		logger.debug("DocumentBuilderFactory class: " + factory.getClass());
-
-		factory.setNamespaceAware(true);
-
-		try {
-
-			final DocumentBuilder builder = factory.newDocumentBuilder();
-			return builder.parse(planFile);
-
-		} catch (ParserConfigurationException e) {
-			logger.error("Couldn't create Document - " + e.getMessage());
-			throw new PlanException("Couldn't create Document - "
-					+ e.getMessage(), e);
-		} catch (SAXException e) {
-			logger.error("Couldn't parse plan XML file - " + e.getMessage());
-			throw new PlanException("Couldn't parse plan XML file - "
-					+ e.getMessage(), e);
-		} catch (IOException e) {
-			logger.error("Couldn't read plan XML file - " + e.getMessage());
-			throw new PlanException("Couldn't read plan XML file - "
-					+ e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * Gets the URLs of files this plan applies to.
-	 * 
-	 * @param plan
-	 *            the plan
-	 * @param planDataFile
-	 * @return a {@link List} of file URLs.
-	 * @throws PlanException
-	 *             if an error occurred extracting URLs from the plan.
-	 */
-	private List<String> getFileURLsFromPlan(final File planDataFile)
-			throws PlanException {
-
-		String xpathSelectIDs = "/plato:plans/plato:plan/plato:preservationActionPlan/plato:objects/plato:object/@uid";
-
-		XPathFactory xPathFactory = XPathFactory.newInstance();
-		logger.debug("XPathFactory class: " + xPathFactory.getClass());
-
-		final XPath xpath = xPathFactory.newXPath();
-		xpath.setNamespaceContext(new PlanNamespaceContext());
-
-		final List<String> fileURLs = new ArrayList<String>();
-
-		try {
-
-			final XPathExpression expr = xpath.compile(xpathSelectIDs);
-
-			InputStream is = new FileInputStream(planDataFile);
-			String result = expr.evaluate(new InputSource(is));
-			is.close();
-
-			logger.debug("XPath result: " + result);
-
-			// final NodeList nl = (NodeList) expr.evaluate(plan,
-			// XPathConstants.NODESET);
-			//
-			// for (int i = 0; i < nl.getLength(); i++) {
-			// final Node item = nl.item(i);
-			// fileURLs.add(item.getNodeValue());
-			// }
-
-			return fileURLs;
-
-		} catch (XPathExpressionException e) {
-			logger.debug("Couln't read file URLs in plan - " + e.getMessage());
-			throw new PlanException("Couln't read file URLs in plan - "
-					+ e.getMessage(), e);
-		} catch (IOException e) {
-			logger.debug("Couln't read file URLs in plan - " + e.getMessage());
-			throw new PlanException("Couln't read file URLs in plan - "
-					+ e.getMessage(), e);
-		}
 	}
 
 	/**
