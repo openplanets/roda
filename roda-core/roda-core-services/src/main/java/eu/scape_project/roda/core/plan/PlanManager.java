@@ -33,6 +33,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -419,7 +420,7 @@ public enum PlanManager {
 		return results;
 	}
 
-	public List<Plan> searchPlans(int startIndex, int maxResults,
+	public SearchResults searchPlans(int startIndex, int maxResults,
 			String queryStr) throws PlanException {
 		logger.trace("searchPlans(" + startIndex + ", " + maxResults + ", "
 				+ queryStr + ")");
@@ -431,17 +432,18 @@ public enum PlanManager {
 			maxResults = 100;
 		}
 
-		List<Plan> results = new ArrayList<Plan>();
-
 		try {
+			List<Plan> results = new ArrayList<Plan>();
+
 			Query query = new MultiFieldQueryParser(Version.LUCENE_44,
 					planSearchFields, new StandardAnalyzer(Version.LUCENE_44))
 					.parse(queryStr);
 
 			// Query query = parser.Query(value);
 
-			ScoreDoc[] hits = getIndexSearcher().search(query,
-					startIndex + maxResults).scoreDocs;
+			TopDocs topDocs = getIndexSearcher().search(query,
+					startIndex + maxResults);
+			ScoreDoc[] hits = topDocs.scoreDocs;
 
 			logger.debug("Query '" + query + "' returned " + hits.length
 					+ " results");
@@ -462,6 +464,8 @@ public enum PlanManager {
 				}
 			}
 
+			return new SearchResults(results, topDocs.totalHits);
+
 		} catch (IOException e) {
 			logger.debug("Error searching index - " + e.getMessage(), e);
 			throw new PlanException(
@@ -472,7 +476,6 @@ public enum PlanManager {
 					e);
 		}
 
-		return results;
 	}
 
 	public int reindexPlans() throws PlanException {
@@ -537,5 +540,15 @@ public enum PlanManager {
 					+ e.getMessage(), e);
 		}
 
+	}
+
+	class SearchResults {
+		List<Plan> results = null;
+		int totalNumberOfResults = 0;
+
+		public SearchResults(List<Plan> results, int totalNumberOfResults) {
+			this.results = results;
+			this.totalNumberOfResults = totalNumberOfResults;
+		}
 	}
 }

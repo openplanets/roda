@@ -17,7 +17,6 @@ package eu.scape_project.roda.core.plan;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.List;
 
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -35,6 +34,8 @@ import org.apache.lucene.search.Query;
 import org.z3950.zing.cql.CQLNode;
 import org.z3950.zing.cql.CQLParseException;
 import org.z3950.zing.cql.CQLParser;
+
+import eu.scape_project.roda.core.plan.PlanManager.SearchResults;
 
 /**
  * JAX-RS Resource for Plan search
@@ -58,6 +59,34 @@ public class PlanSearchResource {
 			@QueryParam("startRecord") final int offset,
 			@QueryParam("maximumRecords") @DefaultValue("25") final int limit) {
 
+		if (!"searchRetrieve".equalsIgnoreCase(operation)) {
+			logger.error("Operation '" + operation
+					+ "' is not supported. Returning HTTP BAD_REQUEST");
+			return Response.status(Response.Status.BAD_REQUEST)
+					.entity("Operation '" + operation + "' is not supported.")
+					.type(MediaType.TEXT_PLAIN).build();
+		}
+
+		if (StringUtils.isBlank(version)) {
+			logger.error("Parameter 'version' is blank. Returning HTTP BAD_REQUEST");
+			return Response
+					.status(Response.Status.BAD_REQUEST)
+					.entity("Parameter 'version' is mandatory and was not provided")
+					.type(MediaType.TEXT_PLAIN).build();
+		}
+		if (!"1.2".equalsIgnoreCase(version)) {
+			logger.warn("Requested version '" + version
+					+ "' is not supported. Ignoring and using version 1.2");
+		}
+
+		if (StringUtils.isBlank(query)) {
+			logger.error("Parameter 'query' is blank. Returning HTTP BAD_REQUEST");
+			return Response
+					.status(Response.Status.BAD_REQUEST)
+					.entity("Parameter 'query' is mandatory and was not provided")
+					.type(MediaType.TEXT_PLAIN).build();
+		}
+
 		try {
 
 			if (StringUtils.isBlank(luceneQuery)) {
@@ -71,8 +100,8 @@ public class PlanSearchResource {
 						+ luceneQuery);
 			}
 
-			final List<Plan> plans = PlanManager.INSTANCE.searchPlans(offset,
-					limit, luceneQuery);
+			final SearchResults searchResults = PlanManager.INSTANCE
+					.searchPlans(offset, limit, luceneQuery);
 
 			/*
 			 * create a stream from the plan XMLs to be written to the HTTP
@@ -83,11 +112,12 @@ public class PlanSearchResource {
 
 				@Override
 				public void write(OutputStream output) throws IOException {
-					writeSRUHeader(output, plans.size());
+					writeSRUHeader(output, searchResults.totalNumberOfResults);
 
-					for (Plan plan : plans) {
+					for (int i = 0; i < searchResults.results.size(); i++) {
+						Plan plan = searchResults.results.get(i);
 						try {
-							writeSRURecord(output, plan);
+							writeSRURecord(output, plan, i);
 						} catch (PlanException e) {
 							logger.debug(
 									"Error writing SRU Record - "
@@ -100,25 +130,37 @@ public class PlanSearchResource {
 					writeSRUFooter(output);
 				}
 
-				private void writeSRURecord(OutputStream output, Plan plan)
-						throws IOException, PlanException {
+				private void writeSRUHeader(OutputStream output, int size)
+						throws UnsupportedEncodingException, IOException {
+					final StringBuilder sru = new StringBuilder();
+					sru.append("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
+					sru.append("<searchRetrieveResponse>");
+					sru.append("<version>1.2</version>");
+					sru.append("<numberOfRecords>" + size
+							+ "</numberOfRecords>");
+					sru.append("<records>");
+					output.write(sru.toString().getBytes("UTF-8"));
+				}
+
+				private void writeSRURecord(OutputStream output, Plan plan,
+						int index) throws IOException, PlanException {
 
 					final StringBuilder sru = new StringBuilder();
-					sru.append("<srw:record>");
-					sru.append("<srw:recordSchema>http://scapeproject.eu/schema/plato</srw:recordSchema>");
+					sru.append("<record>");
+					sru.append("<recordSchema>http://ifs.tuwien.ac.at/dp/plato</recordSchema>");
 					sru.append("<recordIdentifier>" + plan.getId()
 							+ "</recordIdentifier>");
 
-					// sru.append("<srw:recordData>");
+					sru.append("<recordData>");
 					// output.write(sru.toString().getBytes());
 					// InputStream dataInputStream = plan.getDataInputStream();
 					// IOUtils.copyLarge(dataInputStream, output);
 					// dataInputStream.close();
 					// sru.setLength(0);
-					// sru.append("</srw:recordData>");
+					sru.append("</recordData>");
 
-					sru.append("</srw:record>");
-
+					sru.append("<recordPosition>" + index + "</recordPosition>");
+					sru.append("</record>");
 					output.write(sru.toString().getBytes());
 
 				}
@@ -126,20 +168,9 @@ public class PlanSearchResource {
 				private void writeSRUFooter(OutputStream output)
 						throws IOException {
 					final StringBuilder sru = new StringBuilder();
-					sru.append("</srw:records>");
-					sru.append("</srw:searchRetrieveResponse>");
+					sru.append("</records>");
+					sru.append("</searchRetrieveResponse>");
 					output.write(sru.toString().getBytes());
-				}
-
-				private void writeSRUHeader(OutputStream output, int size)
-						throws UnsupportedEncodingException, IOException {
-					final StringBuilder sru = new StringBuilder();
-					sru.append("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
-					sru.append("<srw:searchRetrieveResponse xmlns:srw=\"http://scapeproject.eu/srw/\">");
-					sru.append("<srw:numberOfRecords>" + size
-							+ "</srw:numberOfRecords>");
-					sru.append("<srw:records>");
-					output.write(sru.toString().getBytes("UTF-8"));
 				}
 
 			};
