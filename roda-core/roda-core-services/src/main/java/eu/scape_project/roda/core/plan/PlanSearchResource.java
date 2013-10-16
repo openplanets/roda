@@ -205,7 +205,8 @@ public class PlanSearchResource {
 		CQLParser cqlParser = new CQLParser();
 		CQLNode cqlNode = cqlParser.parse(cqlQuery);
 
-		BasicLuceneQueryTranslator translator = new BasicLuceneQueryTranslator();
+		BasicLuceneQueryTranslator translator = new BasicLuceneQueryTranslator(
+				PlanManager.planSearchFields);
 		Query query = translator.makeQuery(cqlNode);
 		return query.toString();
 	}

@@ -68,7 +68,7 @@ public enum PlanManager {
 	 */
 	private IndexSearcher indexSearcher;
 
-	final static protected String[] planFields = new String[] { "ID",
+	final static protected String[] planSearchFields = new String[] { "ID",
 			"IDReserveDate", "IDReserveUser", "Enabled", "DeployDate",
 			"DeployUser", "Author", "Description", "NumberOfFiles" };
 
@@ -435,7 +435,7 @@ public enum PlanManager {
 
 		try {
 			Query query = new MultiFieldQueryParser(Version.LUCENE_44,
-					planFields, new StandardAnalyzer(Version.LUCENE_44))
+					planSearchFields, new StandardAnalyzer(Version.LUCENE_44))
 					.parse(queryStr);
 
 			// Query query = parser.Query(value);
