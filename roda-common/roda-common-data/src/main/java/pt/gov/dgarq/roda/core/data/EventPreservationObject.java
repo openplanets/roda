@@ -10,7 +10,7 @@ import java.util.Date;
  */
 public class EventPreservationObject extends SimpleEventPreservationObject {
 	private static final long serialVersionUID = 1555211337883930542L;
-
+	public static final String PRESERVATION_EVENT_TYPE_DATACONNECTOR_INGESTION = "data-connector ingestion";
 	public static final String PRESERVATION_EVENT_TYPE_INGESTION = "ingestion";
 	public static final String PRESERVATION_EVENT_TYPE_FIXITY_CHECK = "fixity check";
 	public static final String PRESERVATION_EVENT_TYPE_MIGRATION = "migration";
@@ -20,6 +20,7 @@ public class EventPreservationObject extends SimpleEventPreservationObject {
 	public static final String PRESERVATION_EVENT_AGENT_ROLE_PRESERVATION_TASK = "preservation task";
 
 	public static final String PRESERVATION_EVENT_OBJECT_ROLE_TARGET = "target";
+	public static final String PRESERVATION_EVENT_TYPE_UPDATE = "update";
 
 	// ID is already set in PreservationObject
 	// getType() is already set in PreservationObject

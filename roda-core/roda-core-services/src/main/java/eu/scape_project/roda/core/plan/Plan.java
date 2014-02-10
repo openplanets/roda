@@ -16,6 +16,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.UUID;
 
 import javax.xml.bind.JAXBContext;
@@ -41,8 +43,12 @@ import org.xml.sax.SAXException;
 import pt.gov.dgarq.roda.util.JAXBUtility;
 import at.ac.tuwien.ifs.dp.plato.ObjectFactory;
 import at.ac.tuwien.ifs.dp.plato.Plans;
+import eu.scape_project.model.Identifier;
+import eu.scape_project.model.plan.PlanData;
 import eu.scape_project.model.plan.PlanExecutionState;
 import eu.scape_project.model.plan.PlanExecutionStateCollection;
+import eu.scape_project.model.plan.PlanLifecycleState;
+import eu.scape_project.model.plan.PlanLifecycleState.PlanState;
 import fr.prados.xpath4sax.SAXXPath;
 import fr.prados.xpath4sax.XPathSyntaxException;
 import fr.prados.xpath4sax.XPathXMLHandler;
@@ -64,6 +70,8 @@ public class Plan {
 	 * The {@link Date} when the identifier was reserved.
 	 */
 	private Date idReserveDate;
+	
+
 
 	/**
 	 * The user that reserved the identifier.
@@ -94,6 +102,11 @@ public class Plan {
 	 * The description of the plan.
 	 */
 	private String description;
+	
+	/**
+	 * The title of the plan
+	 */
+	private String title;
 
 	/**
 	 * The MD5 checksum of the plan.
@@ -109,6 +122,19 @@ public class Plan {
 	 * The number of files targeted by this plan.
 	 */
 	private long numberOfFiles = -1;
+
+	
+	
+	
+	
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
 
 	/**
 	 * Constructs a new {@link Plan} with a random identifier.
@@ -581,6 +607,7 @@ public class Plan {
 			meta.addProperty("Author", getAuthor());
 			meta.addProperty("Description", getDescription());
 			meta.addProperty("NumberOfFiles", getNumberOfFiles());
+			meta.addProperty("Title", getTitle());
 
 			meta.save(metadataFile);
 
@@ -643,12 +670,12 @@ public class Plan {
 
 	}
 
-	public File storeData(InputStream data) throws PlanException {
+	public File storeData(InputStream data) throws PlanException, PlanAlreadyExistsException {
 		logger.trace("storeData(InputStream...)");
 
 		if (hasData()) {
 
-			throw new PlanException("Plan already has data");
+			throw new PlanAlreadyExistsException();
 
 		} else {
 
@@ -777,7 +804,7 @@ public class Plan {
 			plan.setAuthor(metadata.getString("Author"));
 			plan.setDescription(metadata.getString("Description"));
 			plan.setNumberOfFiles(metadata.getLong("NumberOfFiles", -1));
-
+			plan.setTitle(metadata.getString("Title"));
 			return plan;
 
 		} catch (ConfigurationException e) {
@@ -819,6 +846,7 @@ public class Plan {
 					"/plans/plan/properties/@author");
 			final SAXXPath xpathSelectDescription = new SAXXPath(
 					"/plans/plan/properties/description/text()");
+			final SAXXPath xpathSelectTitle = new SAXXPath("/plans/plan/properties/@name");
 
 			XPathXMLHandler handler = new XPathXMLHandler() {
 				@Override
@@ -849,6 +877,9 @@ public class Plan {
 							setDescription(node.getNodeValue());
 							logger.info("Description: " + getDescription());
 
+						} else if(xpathSelectTitle.equals(xpath)){
+							setTitle(node.getNodeValue());
+							logger.info("Title: " + getTitle());
 						} else {
 							logger.warn("Ignoring unknown SAXXPath " + xpath);
 						}
@@ -862,7 +893,7 @@ public class Plan {
 				}
 			};
 			handler.setXPaths(XPathXMLHandler.toXPaths(xpathSelectUIDs,
-					xpathSelectAuthor, xpathSelectDescription));
+					xpathSelectAuthor, xpathSelectDescription, xpathSelectTitle));
 			SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
 
 			FileReader reader = new FileReader(planDataFile);
@@ -890,6 +921,33 @@ public class Plan {
 					+ e.getMessage(), e);
 		}
 
+	}
+
+	public PlanData convertToPlanData() {
+		SortedSet<PlanExecutionState> executionStates = null;
+		PlanLifecycleState plcs;
+		if(this.isEnabled()){
+			plcs = new PlanLifecycleState(PlanState.ENABLED, "");
+		}else{
+			plcs = new PlanLifecycleState(PlanState.DISABLED, "");
+		}
+		
+		try{
+			executionStates = new TreeSet<PlanExecutionState>(this.getPlanExecutionStateCollection().getExecutionStates());
+		}catch(PlanException pe){
+			logger.warn("Error while fetching executions states for plan "+this.getId() + " - "+pe.getMessage(),pe);
+		}
+		
+		PlanData planData = new PlanData.
+				Builder().
+				title(this.getTitle()).
+				identifier(new Identifier(this.getId())).
+				description(this.getDescription()).
+				executionStates(executionStates).
+				lifecycleState(plcs).
+				build();
+		
+		return planData;
 	}
 
 }

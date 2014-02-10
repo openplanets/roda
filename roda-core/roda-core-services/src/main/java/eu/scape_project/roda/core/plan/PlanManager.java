@@ -1,6 +1,7 @@
 package eu.scape_project.roda.core.plan;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,6 +39,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
+import eu.scape_project.model.plan.PlanData;
+import eu.scape_project.model.plan.PlanDataCollection;
 import pt.gov.dgarq.roda.core.RodaWebApplication;
 
 public enum PlanManager {
@@ -206,6 +209,23 @@ public enum PlanManager {
 		} else {
 
 			logger.warn("getPlan(id=" + id + "): plan file doesn't exist: "
+					+ planMetadataFile.getAbsolutePath()
+					+ ". Throwing NoSuchPlanException");
+
+			throw new NoSuchPlanException("Plan " + id + " could not be found");
+		}
+	}
+	
+	public boolean deletePlan(String id) throws PlanException, IOException {
+		logger.trace("deletePlan(id=" + id + ")");
+		File planMetadataFile = getPlanMetadataFile(id);
+
+		if (planMetadataFile.exists()) {
+			getIndexWriter().deleteDocuments(new TermQuery(new Term("ID", id)));
+			return planMetadataFile.delete();
+		} else {
+
+			logger.warn("deletePlan(id=" + id + "): plan file doesn't exist: "
 					+ planMetadataFile.getAbsolutePath()
 					+ ". Throwing NoSuchPlanException");
 
@@ -551,4 +571,22 @@ public enum PlanManager {
 			this.totalNumberOfResults = totalNumberOfResults;
 		}
 	}
+
+	public PlanDataCollection getPlanDataCollection() throws PlanException {
+		logger.debug("getPlanDataCollection()");
+		List<PlanData> plans = new ArrayList<PlanData>();
+        File[] plansFileList = getPlansDirectory().listFiles();
+        for (File file : plansFileList){
+            if (file.isFile() && file.getPath().endsWith(".metadata")){
+            	Plan plan = Plan.loadPlan(file);
+            	if(plan.getDeployDate()!=null){
+            		PlanData planData = plan.convertToPlanData();
+            		plans.add(planData);
+            	}
+            }
+        }
+		return new PlanDataCollection(plans);
+	}
+
+	
 }

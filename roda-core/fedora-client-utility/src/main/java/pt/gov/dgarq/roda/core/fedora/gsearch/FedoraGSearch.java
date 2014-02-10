@@ -216,7 +216,7 @@ public class FedoraGSearch {
 	 * @return a {@link SearchResult} with the results of this search.
 	 * @throws FedoraGSearchException
 	 */
-	private SearchResult search(String query, int firstResultIndex,
+	public SearchResult search(String query, int firstResultIndex,
 			int maxResults, int snippetsMax, int fieldMaxLength)
 			throws FedoraGSearchException {
 

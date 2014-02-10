@@ -14,7 +14,9 @@ public class AgentPreservationObject extends PreservationObject {
 	public static final String PRESERVATION_AGENT_TYPE_MIGRATOR = "software:migrator";
 	public static final String PRESERVATION_AGENT_TYPE_FIXITY_CHECK_PLUGIN = "software:plugin:fixity_check";
 	public static final String PRESERVATION_AGENT_TYPE_UNKNOWN_PREFIX = "unknown:";
-
+	public static final String PRESERVATION_AGENT_TYPE_DATACONNECTOR_INGEST = "software:dataconnector:ingest";
+	public static final String PRESERVATION_AGENT_TYPE_DATACONNECTOR_UPDATE = "software:dataconnector:update";
+	
 	public static final String[] PRESERVATION_AGENT_TYPES = new String[] {
 			PRESERVATION_AGENT_TYPE_INGEST_TASK,
 			PRESERVATION_AGENT_TYPE_MIGRATOR,
@@ -24,6 +26,8 @@ public class AgentPreservationObject extends PreservationObject {
 	 * Preservation Object type - Agent
 	 */
 	public static final String TYPE = "agent";
+
+	
 
 	private String agentType = null;
 

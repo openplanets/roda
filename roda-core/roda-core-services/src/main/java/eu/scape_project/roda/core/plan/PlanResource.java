@@ -1,7 +1,9 @@
 package eu.scape_project.roda.core.plan;
 
+import java.io.IOException;
 import java.io.InputStream;
 
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -62,10 +64,45 @@ public class PlanResource {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
 					.entity("Couldn't deploy plan - " + e.getMessage())
 					.type(MediaType.TEXT_PLAIN).build();
-		}
+		} catch (PlanAlreadyExistsException e) {
+			logger.error("Couldn't deploy plan - Plan already exists.");
+			return Response.status(Response.Status.BAD_REQUEST)
+					.entity("Couldn't deploy plan - Plan already exists.")
+					.type(MediaType.TEXT_PLAIN).build();
+		} 
 
 	}
-
+	
+	
+	@DELETE
+	public Response deletePlan(@PathParam("id") final String id){
+		try {
+			boolean deleted = PlanManager.INSTANCE.deletePlan(id);
+			
+			if(deleted){
+				return Response.ok().header("Content-Type", MediaType.TEXT_XML).build();
+			}else{
+				return Response.notModified().header("Content-Type", MediaType.TEXT_XML).build();
+			}
+		} catch (NoSuchPlanException e) {
+			logger.error("Plan " + id + " doesn't exist - " + e.getMessage(), e);
+			return Response
+					.status(Response.Status.NOT_FOUND)
+					.entity("Plan " + id + " doesn't exist - " + e.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
+		} catch (PlanException e) {
+			logger.error("Couldn't retrieve plan - " + e.getMessage(), e);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Couldn't retrieve plan - " + e.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
+		} catch (IOException e) {
+			logger.error("Error deleting plan - " + e.getMessage(), e);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Couldn't retrieve plan - " + e.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
+		}
+	}
+	
 	@GET
 	public Response getPlan(@PathParam("id") final String id) {
 		try {

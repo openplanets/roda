@@ -1,4 +1,4 @@
-package eu.scape_project.roda.core.plan;
+package eu.scape_project.roda.core;
 
 /* 
  * OCKHAM P2PREGISTRY Copyright 2006 Oregon State University

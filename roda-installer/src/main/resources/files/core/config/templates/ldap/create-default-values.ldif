@@ -350,4 +350,5 @@ objectClass: top
 cn: ingest.insert_files
 roleOccupant: uid=roda-ingest-task,LDAP_USERS_DN
 roleOccupant: uid=roda-preservation-task,LDAP_USERS_DN
+roleOccupant: uid=admin,LDAP_USERS_DN
 

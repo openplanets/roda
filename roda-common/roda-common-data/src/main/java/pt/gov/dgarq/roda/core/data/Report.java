@@ -17,6 +17,7 @@ public class Report implements Serializable {
 	 * A plugin report
 	 */
 	public static final String TYPE_PLUGIN_REPORT = "PLUGIN_REPORT";
+	public static final String TYPE_DATACONNECTOR_REPORT = "DATACONNECTOR_REPORT";
 
 	private String id = null;
 	private String type = null;

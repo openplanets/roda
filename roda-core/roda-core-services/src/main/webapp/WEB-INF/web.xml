@@ -663,7 +663,7 @@
 	<!-- PlanResource authentication filter -->
 	<filter-mapping>
 		<filter-name>LdapAuthenticationFilter</filter-name>
-		<url-pattern>/rest/plan</url-pattern>
+		<url-pattern>/rest/*</url-pattern>
 	</filter-mapping>
 	<!-- Report API authentication filter -->
 	<!-- 

@@ -35,6 +35,7 @@ import org.z3950.zing.cql.CQLNode;
 import org.z3950.zing.cql.CQLParseException;
 import org.z3950.zing.cql.CQLParser;
 
+import eu.scape_project.roda.core.BasicLuceneQueryTranslator;
 import eu.scape_project.roda.core.plan.PlanManager.SearchResults;
 
 /**
@@ -44,7 +45,7 @@ import eu.scape_project.roda.core.plan.PlanManager.SearchResults;
  * @author Rui Castro
  * 
  */
-@Path("/plan/sru")
+@Path("plan/sru")
 public class PlanSearchResource {
 	static final private Logger logger = Logger
 			.getLogger(PlanSearchResource.class);
