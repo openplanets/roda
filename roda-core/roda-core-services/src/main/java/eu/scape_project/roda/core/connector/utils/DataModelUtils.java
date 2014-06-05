@@ -1,5 +1,8 @@
 package eu.scape_project.roda.core.connector.utils;
 
+import info.lc.xmlns.premis_v2.PremisComplexType;
+import info.lc.xmlns.textmd_v3.TextMD;
+
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,7 +27,11 @@ import javax.xml.bind.Unmarshaller;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.purl.dc.elements._1.ElementContainer;
+import org.purl.dc.elements._1.ObjectFactory;
+import org.purl.dc.elements._1.SimpleLiteral;
 
+import pt.gov.dgarq.roda._2008.eadcschema.C;
 import pt.gov.dgarq.roda.core.BrowserHelper;
 import pt.gov.dgarq.roda.core.EditorHelper;
 import pt.gov.dgarq.roda.core.common.BrowserException;
@@ -41,13 +48,6 @@ import pt.gov.dgarq.roda.core.data.eadc.LangmaterialLanguages;
 import pt.gov.dgarq.roda.core.fedora.FedoraClientException;
 import pt.gov.dgarq.roda.core.metadata.eadc.EadCHelper;
 import pt.gov.dgarq.roda.core.metadata.eadc.EadCMetadataException;
-import scape.dc.ElementContainer;
-import scape.dc.ObjectFactory;
-import scape.dc.SimpleLiteral;
-import scape.eadc.EadC;
-import scape.mix20.Mix;
-import scape.premis.PremisComplexType;
-import scape.text.TextMD;
 import eu.scape_project.model.File;
 import eu.scape_project.model.Identifier;
 import eu.scape_project.model.IntellectualEntity;
@@ -55,6 +55,7 @@ import eu.scape_project.model.LifecycleState;
 import eu.scape_project.model.LifecycleState.State;
 import eu.scape_project.model.Representation;
 import eu.scape_project.util.ScapeMarshaller;
+import gov.loc.mix.v20.Mix;
 
 public class DataModelUtils {
 	static final private Logger logger = Logger.getLogger(DataModelUtils.class);
@@ -325,10 +326,10 @@ public class DataModelUtils {
 		eadcHelper.saveToFile(eadcFile);
 		logger.debug("EAD XML FILE:"+eadcFile.getPath());
 		logger.debug("DO URL:"+object.getHandleURL());
-		JAXBContext jc = JAXBContext.newInstance(scape.eadc.EadC.class);
+		JAXBContext jc = JAXBContext.newInstance(C.class);
 
         Unmarshaller unmarshaller = jc.createUnmarshaller();
-        scape.eadc.EadC eadc = (scape.eadc.EadC) unmarshaller.unmarshal(eadcFile);
+        C eadc = (C) unmarshaller.unmarshal(eadcFile);
         logger.debug("EAD NEW LEVEL:"+eadc.getLevel().value()+" - "+eadc.getLevel().name());
         
         ObjectFactory dcFac = new ObjectFactory();
@@ -428,9 +429,9 @@ public class DataModelUtils {
 		}
 		Object o = entity.getDescriptive();
 			DescriptionObject convertedDescriptionObject = null;
-			if(o instanceof EadC){
+			if(o instanceof C){
 				logger.debug("Intellectual Entity contains EadC");
-				convertedDescriptionObject = descriptionObjectFromEadc((EadC)o);
+				convertedDescriptionObject = descriptionObjectFromEadc((C)o);
 				convertedDescriptionObject.setNote("SCAPE:Eadc");
 			}else if(o instanceof ElementContainer){
 				logger.debug("Intellectual Entity contains DC");
@@ -657,10 +658,10 @@ public class DataModelUtils {
 		return convertedDescriptionObject;
 	}
 
-	private DescriptionObject descriptionObjectFromEadc(EadC o) throws IOException, JAXBException, EadCMetadataException {
+	private DescriptionObject descriptionObjectFromEadc(C o) throws IOException, JAXBException, EadCMetadataException {
 		java.io.File tempEADFile = java.io.File.createTempFile("ead", ".xml");
-		EadC eadc = (EadC)o;
-		JAXBContext jcScape = JAXBContext.newInstance(scape.eadc.EadC.class);
+		C eadc = (C)o;
+		JAXBContext jcScape = JAXBContext.newInstance(C.class);
 		OutputStream fileOutputStream = new FileOutputStream(tempEADFile);
 		jcScape.createMarshaller().marshal(eadc, fileOutputStream);
 		fileOutputStream.flush();

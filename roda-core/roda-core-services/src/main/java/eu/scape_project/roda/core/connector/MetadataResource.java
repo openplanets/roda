@@ -19,6 +19,7 @@ import javax.xml.bind.Marshaller;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.Logger;
+import org.purl.dc.elements._1.ElementContainer;
 
 import pt.gov.dgarq.roda.core.BrowserHelper;
 import pt.gov.dgarq.roda.core.EditorHelper;
@@ -32,13 +33,12 @@ import pt.gov.dgarq.roda.core.data.DescriptionObject;
 import pt.gov.dgarq.roda.core.data.RepresentationFile;
 import pt.gov.dgarq.roda.core.data.RepresentationObject;
 import pt.gov.dgarq.roda.core.fedora.FedoraClientException;
-import scape.dc.ElementContainer;
-import scape.mix20.Mix;
 import eu.scape_project.roda.core.connector.utils.DataConnectorException;
 import eu.scape_project.roda.core.connector.utils.DataModelUtils;
 import eu.scape_project.roda.core.connector.utils.HelperUtils;
 import eu.scape_project.roda.core.connector.utils.IngestionUtils;
 import eu.scape_project.roda.core.connector.utils.Utils;
+import gov.loc.mix.v20.Mix;
 
 @Path("metadata")
 public class MetadataResource {

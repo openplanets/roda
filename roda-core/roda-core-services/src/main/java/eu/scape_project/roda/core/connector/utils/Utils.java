@@ -1,5 +1,9 @@
 package eu.scape_project.roda.core.connector.utils;
 
+import gov.loc.mix.v20.Mix;
+import info.lc.xmlns.premis_v2.PremisComplexType;
+import info.lc.xmlns.textmd_v3.TextMD;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -7,15 +11,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.apache.log4j.Logger;
+import org.purl.dc.elements._1.ElementContainer;
 
 import pt.gov.dgarq.roda.core.BrowserHelper;
 import pt.gov.dgarq.roda.core.EditorHelper;
@@ -28,10 +30,6 @@ import pt.gov.dgarq.roda.core.data.SearchResultObject;
 import pt.gov.dgarq.roda.core.data.eadc.DescriptionLevel;
 import pt.gov.dgarq.roda.core.data.search.DefaultSearchParameter;
 import pt.gov.dgarq.roda.core.data.search.EadcSearchFields;
-import scape.dc.ElementContainer;
-import scape.mix20.Mix;
-import scape.premis.PremisComplexType;
-import scape.text.TextMD;
 
 public class Utils {
 	static final private Logger logger = Logger.getLogger(Utils.class);

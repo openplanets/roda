@@ -79,42 +79,38 @@ public class PlanExecutionStateResource {
 
 			Plan plan = PlanManager.INSTANCE.getPlan(planId);
 
-			logger.info("State has date " + state.getTimeStamp()
-					+ ". Changing the date to NOW");
-			state.getTimeStamp().setTime(new Date().getTime());
-			logger.info("State date changed to " + state.getTimeStamp());
+			if (state.getTimeStamp() == null) {
+				state.setTimeStamp(new Date());
+				logger.info("State date changed to " + state.getTimeStamp());
+			}
 
 			plan.addPlanExecutionState(state);
-			
+
 			logger.info("Plan " + planId + " state added: "
 					+ state.getState().toString());
 
 			/*
-			if (state.equals(ExecutionState.EXECUTION_IN_PROGRESS)) {
-
-				try {
-
-					PluginInfo executePlanPluginInfo = PluginManager
-							.getDefaultPluginManager()
-							.getPluginInfo(
-									"pt.keep.roda.core.plugins.ExecutePlanPlugin");
-
-					Task task = new Task("plan", "description", "admin",
-							new Date(), 0, 1, true, false, false,
-							executePlanPluginInfo);
-
-					Task addedTask = SchedulerManager
-							.getDefaultSchedulerManager().addTask(task);
-
-				} catch (PluginManagerException e) {
-				} catch (RODASchedulerException e) {
-				}
-
-			} else {
-
-			}
-			*/
-
+			 * if (state.equals(ExecutionState.EXECUTION_IN_PROGRESS)) {
+			 * 
+			 * try {
+			 * 
+			 * PluginInfo executePlanPluginInfo = PluginManager
+			 * .getDefaultPluginManager() .getPluginInfo(
+			 * "pt.keep.roda.core.plugins.ExecutePlanPlugin");
+			 * 
+			 * Task task = new Task("plan", "description", "admin", new Date(),
+			 * 0, 1, true, false, false, executePlanPluginInfo);
+			 * 
+			 * Task addedTask = SchedulerManager
+			 * .getDefaultSchedulerManager().addTask(task);
+			 * 
+			 * } catch (PluginManagerException e) { } catch
+			 * (RODASchedulerException e) { }
+			 * 
+			 * } else {
+			 * 
+			 * }
+			 */
 
 			return Response.ok().build();
 
