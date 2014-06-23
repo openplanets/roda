@@ -101,7 +101,6 @@ static final private Logger logger = Logger.getLogger(RepresentationResource.cla
 	@Path("{entityID}/{representationID}")
 	@Consumes("application/xml")
 	public Response updateRepresentation(@Context HttpServletRequest req,@PathParam("entityID") String entityID, @PathParam("representationID") String representationID, byte[] binaryRepresentation) {
-		logger.debug("###################################################");
 		logger.debug("updateRepresentation(entityID='"+entityID+"', representationID='"+representationID+"'");
 		Response r = null;
 		try {
@@ -132,7 +131,8 @@ static final private Logger logger = Logger.getLogger(RepresentationResource.cla
 						logger.debug("Updating RepresentationObject");
 						IngestionUtils.getInstance().updateRepresentation(o.getPid(),ro,newRepresentationObject,ingest,uploader,newRepresentation.getFiles());
 
-						r = Response.ok().build();
+						r = Response.status(201).build();
+						break;
 					}
 				}
 				if(r==null){

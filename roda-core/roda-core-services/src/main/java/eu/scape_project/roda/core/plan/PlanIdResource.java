@@ -15,7 +15,7 @@ public class PlanIdResource {
 	@GET
 	@Produces(MediaType.TEXT_PLAIN)
 	public Response reserve() {
-		logger.trace("reserve()");
+		logger.debug("reserve()");
 
 		try {
 
@@ -30,6 +30,11 @@ public class PlanIdResource {
 					.entity("Couldn't reserve a plan identifier - "
 							+ e.getMessage()).type(MediaType.TEXT_PLAIN)
 					.build();
+		} catch(Throwable t){
+			logger.error("Error while reserving plan ID: "+t.getMessage(),t);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error while reserving plan ID - " + t.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
 		}
 
 	}

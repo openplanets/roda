@@ -17,6 +17,7 @@ import javax.xml.bind.JAXBException;
 import org.apache.log4j.Logger;
 
 import pt.gov.dgarq.roda.core.BrowserHelper;
+import pt.gov.dgarq.roda.core.common.NoSuchRODAObjectException;
 import pt.gov.dgarq.roda.core.data.DescriptionObject;
 import eu.scape_project.model.LifecycleState;
 import eu.scape_project.model.LifecycleState.State;
@@ -112,6 +113,9 @@ public class LifecycleResource {
 		} catch (UnsupportedEncodingException uee) {
 			logger.error("Error creating string from stream - " + uee.getMessage(), uee);
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error creating string from stream - " + uee.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (NoSuchRODAObjectException e) {
+			logger.error("Error serializing entity " + entityID + " - " + e.getMessage(), e);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error serializing entity " + entityID + " - " + e.getMessage()).type(MediaType.TEXT_PLAIN).build();
 		}
 	}
 }

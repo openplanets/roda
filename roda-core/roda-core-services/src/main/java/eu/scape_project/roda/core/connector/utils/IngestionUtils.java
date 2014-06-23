@@ -1,5 +1,6 @@
 package eu.scape_project.roda.core.connector.utils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -39,15 +40,16 @@ import pt.gov.dgarq.roda.core.data.Report;
 import pt.gov.dgarq.roda.core.data.ReportItem;
 import pt.gov.dgarq.roda.core.data.RepresentationFile;
 import pt.gov.dgarq.roda.core.data.RepresentationObject;
-import pt.gov.dgarq.roda.core.data.RepresentationPreservationObject;
+import pt.gov.dgarq.roda.core.fedora.FedoraClientException;
 import pt.gov.dgarq.roda.core.metadata.eadc.EadCMetadataException;
-import pt.gov.dgarq.roda.core.metadata.mets.SIPMetsHelper;
 import pt.gov.dgarq.roda.core.reports.ReportManager;
 import pt.gov.dgarq.roda.core.reports.ReportManagerException;
 import pt.gov.dgarq.roda.core.reports.ReportRegistryException;
 import pt.gov.dgarq.roda.util.TempDir;
+import eu.scape_project.model.BitStream;
 import eu.scape_project.model.IntellectualEntity;
 import eu.scape_project.model.Representation;
+import eu.scape_project.util.ScapeMarshaller;
 
 public class IngestionUtils {
 static final private Logger logger = Logger.getLogger(IngestionUtils.class);
@@ -102,7 +104,7 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 		return ingestionUtils;
 	}
 	
-	public String async(IntellectualEntity entity, EditorHelper editor, IngestHelper ingest, BrowserHelper browser,Uploader uploader){
+	public String async(IntellectualEntity entity, EditorHelper editor, IngestHelper ingest, BrowserHelper browser,Uploader uploader, String planID){
 		boolean newIdGenerated=false;
 		String id = null;
 		while(!newIdGenerated){
@@ -111,7 +113,7 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 				newIdGenerated = true;
 				IngestionUtils.addStatusIDToEntityMapping(id,entity);
 				statusIDToEntityMapping.put(id, entity);
-				IngestionThread it = new IngestionThread(entity,editor, ingest, browser,uploader);
+				IngestionThread it = new IngestionThread(entity,editor, ingest, browser,uploader, planID);
 				asyncIngesterThreadPool.execute(it);
 			}
 		}
@@ -130,7 +132,7 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 	}
 
 
-	public String ingest(IntellectualEntity entity,EditorHelper editor, IngestHelper ingest, BrowserHelper browser,Uploader uploader) throws DataConnectorException{
+	public String ingest(IntellectualEntity entity,EditorHelper editor, IngestHelper ingest, BrowserHelper browser,Uploader uploader, String planID) throws DataConnectorException{
 		if(entity.getIdentifier()!=null){
 			logger.debug("Ingest entity  "+entity.getIdentifier().getValue());
 		}else{
@@ -161,9 +163,14 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 			reportItem.addAttribute(new Attribute("IntellectualEntity to DescriptionObject conversion - end datetime",DateParser.getIsoDate(new Date())));
 			reportItem.addAttribute(new Attribute("DescriptionObject ingestion - start datetime",DateParser.getIsoDate(new Date())));
 			descriptionObjectPID = editor.createDescriptionObject(descriptionObject);
-			logger.debug("DescriptionObject PID:"+descriptionObjectPID);
+			if(entity.getDescriptive()!=null){
+				logger.debug("Adding DESCRIPTIVE datastream to "+descriptionObjectPID);
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				ScapeMarshaller.newInstance().serialize(entity.getDescriptive(), bos);
+				String tempURL = browser.getFedoraClientUtility().temporaryUpload(bos.toByteArray());
+				browser.getFedoraClientUtility().getAPIM().addDatastream(descriptionObjectPID, "DESCRIPTIVE", new String[0],"Descriptive Metadata", true, "text/xml", null, tempURL,"X", "A", null, null, "Added by RODA Connector API");
+			}
 			reportItem.addAttribute(new Attribute("DescriptionObject ingestion - end datetime",DateParser.getIsoDate(new Date())));
-			RepresentationPreservationObject rpo = new RepresentationPreservationObject();
 			logger.debug("Ingesting representations...");
 			List<String> representationPIDS = new ArrayList<String>();
 			if(entity.getRepresentations()!=null && entity.getRepresentations().size()>0){
@@ -194,7 +201,8 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 										f.length(), 
 										f.toURI().toURL().toExternalForm()
 									);
-									logger.debug("Adding PartFile "+rFile.getId());
+									logger.debug("PartFile ID: "+rFile.getId());
+									logger.debug("PartFile Name: "+rFile.getOriginalName());
 									ro.addPartFile(rFile);
 									representationFilesToUpload.add(rFile);
 								}catch(Exception e){
@@ -211,8 +219,52 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 						if(representationFilesToUpload.size()>0){
 							logger.debug("Creating RepresentationObject with ID:"+ro.getId());
 							String rObjectPID = ingest.createRepresentationObject(ro);
-							representationPIDS.add(rObjectPID);
 							logger.debug("RepresentationObject PID:"+rObjectPID);
+							if(r.getProvenance()!=null){
+								logger.debug("Adding PROVENANCE datastream to "+rObjectPID);
+								ByteArrayOutputStream bos = new ByteArrayOutputStream();
+								ScapeMarshaller.newInstance().serialize(r.getProvenance(), bos);
+								String tempURL = browser.getFedoraClientUtility().temporaryUpload(bos.toByteArray());
+								browser.getFedoraClientUtility().getAPIM().addDatastream(rObjectPID, "PROVENANCE", new String[0],"Provenance Metadata", true, "text/xml", null, tempURL,"X", "A", null, null, "Added by RODA Connector API");
+							}
+							if(r.getRights() !=null){
+								logger.debug("Adding RIGHTS datastream to "+rObjectPID);
+								ByteArrayOutputStream bos = new ByteArrayOutputStream();
+								ScapeMarshaller.newInstance().serialize(r.getRights(), bos);
+								String tempURL = browser.getFedoraClientUtility().temporaryUpload(bos.toByteArray());
+								browser.getFedoraClientUtility().getAPIM().addDatastream(rObjectPID, "RIGHTS", new String[0],"Rights Metadata", true, "text/xml", null, tempURL,"X", "A", null, null, "Added by RODA Connector API");
+							}
+							if(r.getSource() !=null){
+								logger.debug("Adding SOURCE datastream to "+rObjectPID);
+								ByteArrayOutputStream bos = new ByteArrayOutputStream();
+								ScapeMarshaller.newInstance().serialize(r.getSource(), bos);
+								String tempURL = browser.getFedoraClientUtility().temporaryUpload(bos.toByteArray());
+								browser.getFedoraClientUtility().getAPIM().addDatastream(rObjectPID, "SOURCE", new String[0],"Source Metadata", true, "text/xml", null, tempURL,"X", "A", null, null, "Added by RODA Connector API");
+							}
+							if(r.getTechnical() !=null){
+								logger.debug("Adding TECHNICAL datastream to "+rObjectPID);
+								ByteArrayOutputStream bos = new ByteArrayOutputStream();
+								ScapeMarshaller.newInstance().serialize(r.getTechnical(), bos);
+								String tempURL = browser.getFedoraClientUtility().temporaryUpload(bos.toByteArray());
+								browser.getFedoraClientUtility().getAPIM().addDatastream(rObjectPID, "TECHNICAL", new String[0],"Technical Metadata", true, "text/xml", null, tempURL,"X", "A", null, null, "Added by RODA Connector API");
+							}
+							
+							/*
+							if(r.getFiles()!=null && r.getFiles().size()>0){
+								for(eu.scape_project.model.File file : r.getFiles()){
+									if(file.getBitStreams()!=null && file.getBitStreams().size()>0){
+										for(BitStream bs : file.getBitStreams()){
+											logger.debug("Adding bitstream to Fedora...");
+											ByteArrayOutputStream bos = new ByteArrayOutputStream();
+											ScapeMarshaller.newInstance().serialize(bs.getTechnical(), bos);
+											String tempURL = browser.getFedoraClientUtility().temporaryUpload(bos.toByteArray());
+											browser.getFedoraClientUtility().getAPIM().addDatastream(rObjectPID, bs.getIdentifier().toString()+"#"+"TECHNICAL", new String[0],"Technical Metadata", true, "text/xml", null, tempURL,"X", "A", null, null, "Added by RODA Connector API");
+										}
+									}
+								}
+							}
+							*/
+							representationPIDS.add(rObjectPID);
 							logger.debug("Uploading RepresentationFiles");
 							for(RepresentationFile rf : representationFilesToUpload){
 								logger.debug("Uploading RepresentationFile "+rf.getId());
@@ -230,14 +282,14 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 			reportItem.addAttribute(new Attribute("Register event - start datetime", DateParser.getIsoDate(new Date())));
 			agentPO = new AgentPreservationObject();
 			agentPO.setAgentName("Data Connector");
-			agentPO.setID("DCA");
+			
 			agentPO.setAgentType(AgentPreservationObject.PRESERVATION_AGENT_TYPE_INGEST_TASK);//TODO (replace with P_A_...DATACONNECTOR
 			agentPO.setAgentName("DATA CONNECTOR - INGEST");
 			reportItem.addAttribute(new Attribute("Register event - event agent", agentPO.toString()));
 			EventPreservationObject eventPO = new EventPreservationObject();
 			eventPO.setEventDetail("The IntellectualEntity with ID = '"+descriptionObject.getId()+"' was successfully ingested (PID='"+descriptionObjectPID+"')");
 			eventPO.setAgentRole(EventPreservationObject.PRESERVATION_EVENT_TYPE_INGESTION);
-			eventPO.setEventType(EventPreservationObject.PRESERVATION_EVENT_TYPE_INGESTION);
+			eventPO.setEventType(EventPreservationObject.PRESERVATION_EVENT_TYPE_DATACONNECTOR_INGESTION);
 			eventPO.setOutcome("success");
 			eventPO.setOutcomeDetailNote("Connector details");
 			eventPO.setOutcomeDetailExtension("no details");
@@ -250,7 +302,11 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 			report.addAttribute(new Attribute("Finish datetime",DateParser.getIsoDate(new Date())));
 			reportManager.insertReport(report);
 			logger.debug("REGISTER INGEST EVENT");
-			ingest.registerIngestEvent(new String[]{descriptionObjectPID}, representationPIDS.toArray(new String[representationPIDS.size()]), null, agentPO.getAgentName(), "Details");
+			String details = "The IntellectualEntity with ID = '"+descriptionObject.getId()+"' was successfully ingested (PID='"+descriptionObjectPID+"')";
+			if(planID!=null){
+				details+="<br/>[Plan:"+planID+"]";
+			}
+			ingest.registerIngestEvent(new String[]{descriptionObjectPID}, representationPIDS.toArray(new String[representationPIDS.size()]), null, agentPO.getAgentName(), details);
 			
 			if(descriptionObjectPID!=null){
 				return descriptionObject.getId();
@@ -301,6 +357,10 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 			error = "RepresentationAlreadyPreserved exception while getting IngestHelper";
 			logger.error(error+": "+e.getMessage(),e);
 			exception = e;
+		} catch (FedoraClientException e) {
+			error = "FedoraClientException exception while getting IngestHelper";
+			logger.error(error+": "+e.getMessage(),e);
+			exception = e;
 		}
 		report.addItem(generateErrorReportItem("IntellectualEntity ingestion error report",error,exception));
 		if(reportManager!=null){
@@ -322,17 +382,19 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 		EditorHelper editor;
 		IngestHelper ingest;
 		Uploader uploader;
-		   public IngestionThread(IntellectualEntity ie,EditorHelper editor, IngestHelper ingest, BrowserHelper browser,Uploader uploader) {
+		String planID;
+		   public IngestionThread(IntellectualEntity ie,EditorHelper editor, IngestHelper ingest, BrowserHelper browser,Uploader uploader,String planID) {
 		       this.ie = ie;
 		       this.ingest = ingest; 
 		       this.editor = editor;
 		       this.browser = browser;
 		       this.uploader = uploader;
+		       this.planID=planID;
 		   }
 
 		   public void run() {
 			   try{
-				   descriptionObjectID = ingest(ie, editor,ingest,browser,uploader);
+				   descriptionObjectID = ingest(ie, editor,ingest,browser,uploader,planID);
 				   IngestionUtils.getInstance().addRodaID(ie,descriptionObjectID);
 			   }catch(Exception e){
 				   e.printStackTrace();
@@ -351,13 +413,13 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 
 	
 	private ReportItem generateErrorReportItem(String reportItemTitle,String message, Exception e) {
-		logger.debug(message + " - " + e.getMessage(), e);
+		logger.info(message + " - " + e.getMessage(), e);
 		ReportItem reportItem = new ReportItem(reportItemTitle);
 		reportItem.addAttribute(new Attribute("Error", e.getMessage()));
 		return reportItem;
 	}
 
-	public DescriptionObject update(String entityID, IntellectualEntity entity, EditorHelper editor,BrowserHelper browser,IngestHelper ingest) throws DataConnectorException{
+	public DescriptionObject update(String entityID, IntellectualEntity entity, EditorHelper editor,BrowserHelper browser, Uploader uploader,IngestHelper ingest, String planID) throws DataConnectorException{
 		Report report = new Report();
 		ReportManager reportManager = null;
 		String error;
@@ -386,8 +448,112 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 			reportItem.addAttribute(new Attribute("IntellectualEntity to DescriptionObject - end datetime",DateParser.getIsoDate(new Date())));
 			
 			reportItem.addAttribute(new Attribute("DescriptionObject update - start datetime",DateParser.getIsoDate(new Date())));
-			String newDOPid = editor.createDescriptionObject(newDO);
-			newDO = browser.getDescriptionObject(newDOPid);
+			
+			String originalPID = Utils.findById(entityID, browser).getPid();
+			newDO.setPid(originalPID);
+			
+			newDO = editor.modifyDescriptionObject(newDO);
+			
+			
+			if(entity.getDescriptive()!=null){
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				ScapeMarshaller.newInstance().serialize(entity.getDescriptive(), bos);
+				String tempURL = browser.getFedoraClientUtility().temporaryUpload(bos.toByteArray());
+				browser.getFedoraClientUtility().getAPIM().modifyDatastreamByValue(newDO.getPid(), "DESCRIPTIVE", null,
+						"Descriptive Metadata", "text/xml", null,
+						bos.toByteArray(), null, null,
+						"Modified by RODA Core", false);
+			}
+			
+			logger.debug("Ingesting representations...");
+			List<String> representationPIDS = new ArrayList<String>();
+			if(entity.getRepresentations()!=null && entity.getRepresentations().size()>0){
+				reportItem.addAttribute(new Attribute("RepresentationObjects ingestion - start datetime",DateParser.getIsoDate(new Date())));
+				File temp = TempDir.createUniqueTemporaryDirectory("representations");
+				for(Representation r : entity.getRepresentations()){
+					try{
+						RepresentationObject ro = DataModelUtils.getInstance(browser,editor).representationToRepresentationObject(r);
+						logger.debug("RepresentationObject ID1: "+ro.getId());
+						ro.setDescriptionObjectPID(newDO.getPid());
+						logger.debug("Processing representation files...");
+						List<RepresentationFile> representationFilesToUpload = new ArrayList<RepresentationFile>();
+						if(r.getFiles()!=null && r.getFiles().size()>0){
+							for(eu.scape_project.model.File file : r.getFiles()){
+								try{
+									String fileName = file.getFilename();
+									if(fileName==null){
+										String[] values=file.getUri().toString().split("/");
+										fileName=values[values.length-1];
+									}
+									File f = new File(temp,fileName);
+									IOUtils.copy(file.getUri().toURL().openStream(), new FileOutputStream(f));
+									String mimetype = FormatUtility.getMimetype(f);
+									RepresentationFile rFile = new RepresentationFile(
+										file.getIdentifier().getValue(),
+										f.getName(),
+										mimetype==null?"application/octet-stream":mimetype, 
+										f.length(), 
+										f.toURI().toURL().toExternalForm()
+									);
+									logger.debug("Adding PartFile "+rFile.getId());
+									ro.addPartFile(rFile);
+									representationFilesToUpload.add(rFile);
+								}catch(Exception e){
+									
+									logger.error("Error while getting file from URL:"+file.getUri().toString()+": "+e.getMessage(),e);
+								}
+								
+							}
+						}
+						ro.setType(RepresentationObject.UNKNOWN);
+						ro.setStatuses(new String[] { RepresentationObject.STATUS_ORIGINAL });
+						ro.setDescriptionObjectPID(newDO.getPid());
+						logger.debug("RepresentationFiles to upload: "+representationFilesToUpload.size());
+						if(representationFilesToUpload.size()>0){
+							logger.debug("Creating RepresentationObject with ID:"+ro.getId());
+							String rObjectPID = ingest.createRepresentationObject(ro);
+							/*
+							if(r.getProvenance()!=null){
+								ByteArrayOutputStream bos = new ByteArrayOutputStream();
+								ScapeMarshaller.newInstance().serialize(r.getProvenance(), bos);
+								String tempURL = browser.getFedoraClientUtility().temporaryUpload(bos.toByteArray());
+								browser.getFedoraClientUtility().getAPIM().addDatastream(rObjectPID, "PROVENANCE", new String[0],"Provenance Metadata", true, "text/xml", null, tempURL,"X", "A", null, null, "Added by RODA Connector API");
+							}
+							if(r.getRights()!=null){
+								ByteArrayOutputStream bos = new ByteArrayOutputStream();
+								ScapeMarshaller.newInstance().serialize(r.getRights(), bos);
+								String tempURL = browser.getFedoraClientUtility().temporaryUpload(bos.toByteArray());
+								browser.getFedoraClientUtility().getAPIM().addDatastream(rObjectPID, "RIGHTS", new String[0],"Rights Metadata", true, "text/xml", null, tempURL,"X", "A", null, null, "Added by RODA Connector API");
+							}
+							if(r.getSource()!=null){
+								ByteArrayOutputStream bos = new ByteArrayOutputStream();
+								ScapeMarshaller.newInstance().serialize(r.getSource(), bos);
+								String tempURL = browser.getFedoraClientUtility().temporaryUpload(bos.toByteArray());
+								browser.getFedoraClientUtility().getAPIM().addDatastream(rObjectPID, "SOURCE", new String[0],"Source Metadata", true, "text/xml", null, tempURL,"X", "A", null, null, "Added by RODA Connector API");
+							}
+							if(r.getTechnical()!=null){
+								ByteArrayOutputStream bos = new ByteArrayOutputStream();
+								ScapeMarshaller.newInstance().serialize(r.getTechnical(), bos);
+								String tempURL = browser.getFedoraClientUtility().temporaryUpload(bos.toByteArray());
+								browser.getFedoraClientUtility().getAPIM().addDatastream(rObjectPID, "TECHNICAL", new String[0],"Technical Metadata", true, "text/xml", null, tempURL,"X", "A", null, null, "Added by RODA Connector API");
+							}
+							*/
+							representationPIDS.add(rObjectPID);
+							logger.debug("RepresentationObject PID:"+rObjectPID);
+							logger.debug("Uploading RepresentationFiles");
+							for(RepresentationFile rf : representationFilesToUpload){
+								logger.debug("Uploading RepresentationFile "+rf.getId());
+								uploader.uploadRepresentationFile(rObjectPID, rf);
+							}
+							logger.debug("End of upload");
+						}
+					}catch(Exception e){
+						logger.error("Error while ingesting representation: "+e.getMessage(),e);
+					}
+				}
+				reportItem.addAttribute(new Attribute("RepresentationObjects ingestion - end datetime",DateParser.getIsoDate(new Date())));
+			}
+			
 			reportItem.addAttribute(new Attribute("DescriptionObject update - end datetime",DateParser.getIsoDate(new Date())));
 			report.addItem(reportItem);
 			
@@ -398,14 +564,12 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 			reportItem.addAttribute(new Attribute("Register event - start datetime", DateParser.getIsoDate(new Date())));
 			agentPO = new AgentPreservationObject();
 			agentPO.setAgentName("Data Connector");
-			agentPO.setID("DCA");
 			agentPO.setAgentType(AgentPreservationObject.PRESERVATION_AGENT_TYPE_DATACONNECTOR_UPDATE);
 			agentPO.setAgentName("DATA CONNECTOR - UPDATE");
 			reportItem.addAttribute(new Attribute("Register event - event agent", agentPO.toString()));
 			EventPreservationObject eventPO = new EventPreservationObject();
-			
 	
-			eventPO.setEventDetail("The IntellectualEntity with ID = '"+newDO.getId()+"' was successfully ingested (PID='"+newDOPid+"')");
+			eventPO.setEventDetail("The IntellectualEntity with ID = '"+newDO.getId()+"' was successfully ingested (PID='"+newDO.getPid()+"')");
 			eventPO.setAgentRole(EventPreservationObject.PRESERVATION_EVENT_TYPE_UPDATE);
 			eventPO.setEventType(EventPreservationObject.PRESERVATION_EVENT_TYPE_DATACONNECTOR_INGESTION);
 			eventPO.setOutcome("success");
@@ -446,6 +610,9 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 			exception = e;
 		} catch (BrowserException e) {
 			error = "Browser exception while getting updated IntellectualEntity";
+			exception = e;
+		} catch (FedoraClientException e) {
+			error = "FedoraClientException while getting updated IntellectualEntity";
 			exception = e;
 		} 
 		report.addItem(generateErrorReportItem("IntellectualEntity ingestion error report",error,exception));
@@ -501,7 +668,6 @@ static final private Logger logger = Logger.getLogger(IngestionUtils.class);
 			reportItem.addAttribute(new Attribute("Register event - start datetime", DateParser.getIsoDate(new Date())));
 			agentPO = new AgentPreservationObject();
 			agentPO.setAgentName("Data Connector");
-			agentPO.setID("DCA");
 			agentPO.setAgentType(AgentPreservationObject.PRESERVATION_AGENT_TYPE_DATACONNECTOR_UPDATE);
 			agentPO.setAgentName("DATA CONNECTOR - UPDATE");
 			reportItem.addAttribute(new Attribute("Register event - event agent", agentPO.toString()));

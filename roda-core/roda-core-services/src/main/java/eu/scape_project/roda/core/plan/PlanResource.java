@@ -45,7 +45,7 @@ public class PlanResource {
 	@PUT
 	public Response deployPlan(@PathParam("id") final String id,
 			@Context UriInfo uriInfo, final InputStream src) {
-
+		logger.debug("deployPlan(id="+id+")");
 		try {
 
 			Plan plan = PlanManager.INSTANCE.getPlan(id);
@@ -69,13 +69,19 @@ public class PlanResource {
 			return Response.status(Response.Status.BAD_REQUEST)
 					.entity("Couldn't deploy plan - Plan already exists.")
 					.type(MediaType.TEXT_PLAIN).build();
-		} 
+		} catch(Throwable t){
+			logger.error("Error while deploying plan: "+t.getMessage(),t);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error while retrieving plan execution state - " + t.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
+		}
 
 	}
 	
 	
 	@DELETE
 	public Response deletePlan(@PathParam("id") final String id){
+		logger.debug("deletePlan(id="+id+")");
 		try {
 			boolean deleted = PlanManager.INSTANCE.deletePlan(id);
 			
@@ -100,11 +106,17 @@ public class PlanResource {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
 					.entity("Couldn't retrieve plan - " + e.getMessage())
 					.type(MediaType.TEXT_PLAIN).build();
+		} catch(Throwable t){
+			logger.error("Error deleting plan: "+t.getMessage(),t);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error deleting plan - " + t.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
 		}
 	}
 	
 	@GET
 	public Response getPlan(@PathParam("id") final String id) {
+		logger.debug("getPlan(id="+id+")");
 		try {
 
 			Plan plan = PlanManager.INSTANCE.getPlan(id);
@@ -127,6 +139,11 @@ public class PlanResource {
 			logger.error("Couldn't retrieve plan - " + e.getMessage(), e);
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
 					.entity("Couldn't retrieve plan - " + e.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
+		} catch(Throwable t){
+			logger.error("Error getting plan: "+t.getMessage(),t);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error getting plan - " + t.getMessage())
 					.type(MediaType.TEXT_PLAIN).build();
 		}
 	}

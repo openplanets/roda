@@ -3,6 +3,7 @@ package pt.gov.dgarq.roda.services.client;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -60,7 +61,9 @@ public class UploadPlanTest {
       fail("MalformedURLException - " + e.getMessage());
     } catch (URISyntaxException e) {
       fail("URISyntaxException - " + e.getMessage());
-    }
+    } catch (FileNotFoundException e) {
+    	 fail("FileNotFoundException - " + e.getMessage());
+	}
 
   }
 

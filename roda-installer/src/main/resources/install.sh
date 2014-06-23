@@ -100,7 +100,7 @@ QUIET=yes
 ################################################################################
 cd $SCRIPT_DIR
 if [ "$SERVLET_CONTAINER" = "tomcat6" ]; then
-	TOMCAT_VERSION="6.0.37"
+	TOMCAT_VERSION="6.0.39"
 	TOMCAT_DIRNAME="apache-tomcat-$TOMCAT_VERSION"
 	export TOMCAT_DIRNAME
 	TOMCAT_ZIP="$TOMCAT_DIRNAME.zip"

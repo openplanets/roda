@@ -268,6 +268,11 @@ public class FedoraClientUtility extends FedoraClient {
 		return String.format("%1$s/%2$s", getFedoraObjectURIFromPID(doPID),
 				dsID);
 	}
+	
+	public String getDatastreamURI(String doPID, String dsID,String date) {
+		return String.format("%1$s/%2$s/%3$s", getFedoraObjectURIFromPID(doPID),
+				dsID,date);
+	}
 
 	/**
 	 * Returns the Fedora URL for a given PID datastream.
@@ -303,6 +308,11 @@ public class FedoraClientUtility extends FedoraClient {
 	public InputStream getDatastream(String pid, String dsID)
 			throws IOException {
 		return get(getDatastreamURI(pid, dsID), true);
+	}
+	
+	public InputStream getDatastream(String pid, String dsID,String date)
+			throws IOException {
+		return get(getDatastreamURI(pid, dsID,date), true);
 	}
 
 	/**

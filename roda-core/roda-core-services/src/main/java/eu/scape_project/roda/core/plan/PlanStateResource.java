@@ -37,7 +37,7 @@ public class PlanStateResource {
 	@Path("{id}")
 	public Response retrievePlanLifecycleState(@PathParam("id") final String id)
 			throws PlanException {
-
+		logger.debug("retrievePlanLifecycleState(id="+id+")");
 		try {
 
 			Plan plan = PlanManager.INSTANCE.getPlan(id);
@@ -59,6 +59,11 @@ public class PlanStateResource {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
 					.entity("Couldn't retrieve plan - " + e.getMessage())
 					.type(MediaType.TEXT_PLAIN).build();
+		}  catch(Throwable t){
+			logger.error("Error retrieving plan lifecycle state: "+t.getMessage(),t);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error retrieving plan lifecycle state - " + t.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
 		}
 
 	}
@@ -67,7 +72,7 @@ public class PlanStateResource {
 	@Path("{id}/{state}")
 	public Response updateLifecycleState(@PathParam("id") final String id,
 			@PathParam("state") String state) throws PlanException {
-
+		logger.debug("updateLifecycleState(id="+id+",state="+state+")");
 		if (state == null) {
 			throw new PlanException("Illegal state: '" + state
 					+ "' only one of [ENABLED,DISABLED] is allowed");
@@ -111,6 +116,11 @@ public class PlanStateResource {
 			logger.error("Couldn't retrieve plan - " + e.getMessage(), e);
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
 					.entity("Couldn't retrieve plan - " + e.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
+		} catch(Throwable t){
+			logger.error("Error updating lifecycle state: "+t.getMessage(),t);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error updating lifecycle state - " + t.getMessage())
 					.type(MediaType.TEXT_PLAIN).build();
 		}
 	}

@@ -15,6 +15,8 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
@@ -556,13 +558,33 @@ public class BrowserServiceImpl extends RemoteServiceServlet implements
 						+ browserServiceMessages.getString("result")
 						+ ": </strong>" + pEvent.getOutcome() + "<br/>";
 			}
+			
+			if (!StringUtils.isBlank(pEvent.getOutcomeDetailExtension())) {
+				if(pEvent.getOutcomeDetailExtension().contains("Plan:")){
+					 Pattern pattern = Pattern.compile("\\[Plan:(.*)\\]");
+					 Matcher m = pattern.matcher(pEvent.getOutcomeDetailExtension());
+					 if (m.find()) {
+						 String planID = m.group(1);
+						 String originalOutcome = pEvent.getOutcomeDetailExtension();
+						 String planHref = "<a href='/SCAPEPlanView?planID="+planID+"' target='_BLANK'>"+planID+"</a>";
+						 content += "<strong>"
+									+ browserServiceMessages.getString("plan")
+									+ ": </strong>" + planHref + "<br/>";
+						 String updatedOutcome = originalOutcome.replace("[Plan:"+planID+"]", "");
+						 pEvent.setOutcomeDetailExtension(updatedOutcome);
+					 }
+				}
+			}
+			
 			if (!StringUtils.isBlank(pEvent.getOutcomeDetailNote())) {
 				content += "<strong>" + pEvent.getOutcomeDetailNote()
 						+ ": </strong>";
 			}
 			if (!StringUtils.isBlank(pEvent.getOutcomeDetailExtension())) {
-				content += truncate(pEvent.getOutcomeDetailExtension(), 200);
+				content += truncate(pEvent.getOutcomeDetailExtension(), 400);
 			}
+			
+			
 			content += "</p>";
 
 			content = escapeXML(content);

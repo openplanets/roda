@@ -4,8 +4,10 @@ import java.io.ByteArrayInputStream;
 import java.net.MalformedURLException;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -32,7 +34,7 @@ public class EntityAsyncResource {
 	static final private Logger logger = Logger.getLogger(EntityAsyncResource.class);
 	
 	@POST
-	public Response ingestIntellectualEntity(@Context HttpServletRequest req,byte[] binaryEntity) {
+	public Response ingestIntellectualEntity(@Context HttpServletRequest req,byte[] binaryEntity,@QueryParam("planID")String planID) {
 		Response r = Response.status(Status.UNSUPPORTED_MEDIA_TYPE).build();
 		BrowserHelper browser=null;
 		EditorHelper editor = null;
@@ -46,7 +48,7 @@ public class EntityAsyncResource {
 			IntellectualEntity entity = ScapeMarshaller.newInstance().deserialize(IntellectualEntity.class, new ByteArrayInputStream(binaryEntity));
 			logger.debug("IntellectualEntity ID:"+entity.getIdentifier().getValue());
 			
-			String statusID = IngestionUtils.getInstance().async(entity,editor,ingest,browser,uploader);
+			String statusID = IngestionUtils.getInstance().async(entity,editor,ingest,browser,uploader,planID);
 			r = Response.ok().entity(statusID).header("Content-Type", MediaType.TEXT_PLAIN).build();
 		}catch(JAXBException je){
 			logger.error("Error while deserializing POST content");

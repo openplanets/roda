@@ -29,6 +29,12 @@ public class FileResource {
 	@GET
 	@Path("{entityID}/{representationID}/{fileID}")
 	public Response getFile(@Context HttpServletRequest req, @PathParam("entityID") String entityID,@PathParam("representationID") String representationID,@PathParam("fileID") String fileID) {
+		return getFile(req, entityID, representationID, fileID, "-1");
+	}
+	
+	@Path("{entityID}/{representationID}/{fileID}/{versionID}")
+	public Response getFile(@Context HttpServletRequest req, @PathParam("entityID") String entityID,@PathParam("representationID") String representationID,@PathParam("fileID") String fileID,@PathParam("versionID") String versionID) {
+		
 		logger.debug("getFile(entity='"+entityID+"', representation='"+representationID+"', file='"+fileID+"')");
 		String coreURL = req.getRequestURL().substring(0,req.getRequestURL().indexOf("/rest/")); 
 		Response r=null;
@@ -102,11 +108,5 @@ public class FileResource {
 			r = Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error creating URI - " + use.getMessage()).type(MediaType.TEXT_PLAIN).build();
 		} 
 		return r;
-	}
-	
-	@Path("{entityID}/{representationID}/{fileID}/{versionID}")
-	public Response getIntellectualEntity(@Context HttpServletRequest req, @PathParam("entityID") String entityID,@PathParam("representationID") String representationID,@PathParam("fileID") String fileID,@PathParam("versionID") String versionID) {
-		
-		return getFile(req, entityID, representationID, fileID);
 	}
 }

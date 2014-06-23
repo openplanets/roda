@@ -128,23 +128,7 @@ public class DataModelUtils {
 			logger.error("Error while parsing representations:"+e.getMessage());
 		}
 		
-		Object descriptive = null;
-		if(object.getNote()!=null && object.getNote().startsWith("SCAPE")){
-			logger.debug("Starts with SCAPE...");
-			if(object.getNote().toLowerCase().endsWith("eadc")){
-				logger.debug("Ends with eadc...");
-				descriptive = eadcFromDescriptionObject(object);
-			}else if(object.getNote().toLowerCase().endsWith("dc")){
-				logger.debug("Ends with dc...");
-				descriptive = dcFromDescriptionObject(object);
-			}else{
-				logger.debug("Error...");
-			}
-		}else{
-			logger.debug("Doesn't start with SCAPE... Getting DC");
-			descriptive = dcFromDescriptionObject(object);
-			
-		}
+		Object descriptive = dcFromDescriptionObject(object);
 		
 		IntellectualEntity e = null;
         if(representations.size()>0){
@@ -431,11 +415,9 @@ public class DataModelUtils {
 			if(o instanceof EadC){
 				logger.debug("Intellectual Entity contains EadC");
 				convertedDescriptionObject = descriptionObjectFromEadc((EadC)o);
-				convertedDescriptionObject.setNote("SCAPE:Eadc");
 			}else if(o instanceof ElementContainer){
 				logger.debug("Intellectual Entity contains DC");
 				convertedDescriptionObject = descriptionObjectFromDc(null,(ElementContainer)o);
-				convertedDescriptionObject.setNote("SCAPE:Dc");
 			}
 			if(entity.getIdentifier()!=null && entity.getIdentifier().getValue()!=null){
 				convertedDescriptionObject.setId(entity.getIdentifier().getValue());

@@ -392,6 +392,39 @@ public class BrowserHelper {
 
 	}
 
+	public DescriptionObject getDescriptionObject(String doPID,String date)
+			throws NoSuchRODAObjectException, InvalidDescriptionLevel,
+			BrowserException {
+
+		SimpleDescriptionObject sdo = getSimpleDescriptionObject(doPID);
+
+		try {
+
+			InputStream eadcInputStream = this.fedoraClientUtility
+					.getDatastream(doPID, descriptionObjectDatastreamID,date);
+
+			DescriptionObject dObject = EadCHelper.newInstance(eadcInputStream)
+					.getDescriptionObject(sdo, sdo.getParentPID(),
+							sdo.getSubElementsCount());
+
+			setCompleteReference(dObject);
+
+			dObject.setHandleURL(getHandleURLForPID(dObject.getPid()));
+
+			return dObject;
+
+		} catch (IOException e) {
+			logger.debug("Exception getting EAD-C stream - " + e.getMessage(),
+					e);
+			throw new BrowserException("Exception getting EAD-C stream - "
+					+ e.getMessage(), e);
+		} catch (EadCMetadataException e) {
+			logger.debug("Exception parsing EAD-C - " + e.getMessage(), e);
+			throw new BrowserException("Exception parsing EAD-C - "
+					+ e.getMessage(), e);
+		}
+
+	}
 	/**
 	 * Returns a list of all Description Object PIDs.
 	 * 

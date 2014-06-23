@@ -305,6 +305,13 @@
 		<servlet-class>
 			pt.gov.dgarq.roda.wui.common.fileupload.server.FileUploadProgressImpl</servlet-class>
 	</servlet>
+	<servlet>
+		<description>
+		</description>
+		<display-name>SCAPEPlanView</display-name>
+		<servlet-name>SCAPEPlanView</servlet-name>
+		<servlet-class>eu.scape_project.roda.wui.SCAPEPlanViewer</servlet-class>
+	</servlet>
 
 	<servlet-mapping>
 		<servlet-name>FlashPageFlipPaid</servlet-name>
@@ -329,6 +336,10 @@
 	<servlet-mapping>
 		<servlet-name>FileUploadProgress</servlet-name>
 		<url-pattern>/fileuploadprogress</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>SCAPEPlanView</servlet-name>
+		<url-pattern>/SCAPEPlanView</url-pattern>
 	</servlet-mapping>
 
 	<!-- Welcome file -->

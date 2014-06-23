@@ -50,21 +50,16 @@ public class MetadataResource {
 		Response r=null;
 		try {
 			BrowserHelper browser = HelperUtils.getBrowserHelper(req,getClass());
-			EditorHelper editor = HelperUtils.getEditorHelper(req,getClass());
-			if(browser!=null && editor!=null){
-				DescriptionObject o = Utils.findById(entityID, browser);
-				Object metadata = DataModelUtils.getInstance(browser, editor).extractMetadataFromDescriptionObject(o,metadataID);
-				if(metadata instanceof ElementContainer){
-					ByteArrayOutputStream bos = new ByteArrayOutputStream();
-					ElementContainer dc = (ElementContainer)metadata;
-					JAXBContext jc = JAXBContext.newInstance(ElementContainer.class);
-					Marshaller m = jc.createMarshaller();
-					m.marshal(dc, bos);
-					String output = bos.toString("UTF-8");
-					return Response.status(Status.OK).entity(output).header("Content-Type", MediaType.TEXT_XML).build();
-				}else{
-					return Response.status(Status.INTERNAL_SERVER_ERROR).entity("Unable to generate metadata").build();
-				}
+			if(browser!=null){
+				DescriptionObject descriptionObject = Utils.findById(entityID,-1, browser);
+				Object o = Utils.getDatastreamObject(descriptionObject.getPid(), -1, metadataID, browser);
+				
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				JAXBContext jc = JAXBContext.newInstance(ElementContainer.class);
+				Marshaller m = jc.createMarshaller();
+				m.marshal(o, bos);
+				String output = bos.toString("UTF-8");
+				r = Response.status(Status.OK).entity(output).header("Content-Type", MediaType.TEXT_XML).build();
 			}else{
 				logger.error("Unable to get helpers");
 				r = Response.status(Status.INTERNAL_SERVER_ERROR).entity("Unable to get helpers").type(MediaType.TEXT_PLAIN).build();
@@ -75,6 +70,15 @@ public class MetadataResource {
 		} catch (UnsupportedEncodingException uee) {
 			logger.error("Error while generating output XML: " + uee.getMessage(), uee);
 			r = Response.status(Response.Status.NOT_FOUND).entity("Error while generating output XML: " + uee.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (NoSuchRODAObjectException e) {
+			logger.error("Error while generating output XML: " + e.getMessage(), e);
+			r = Response.status(Response.Status.NOT_FOUND).entity("Error while generating output XML: " + e.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (IOException e) {
+			logger.error("Error while generating output XML: " + e.getMessage(), e);
+			r = Response.status(Response.Status.NOT_FOUND).entity("Error while generating output XML: " + e.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (Throwable e) {
+			logger.error("Error while generating output XML: " + e.getMessage(), e);
+			r = Response.status(Response.Status.NOT_FOUND).entity("Error while generating output XML: " + e.getMessage()).type(MediaType.TEXT_PLAIN).build();
 		}
 		
 		return r;

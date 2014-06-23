@@ -15,6 +15,7 @@ public class PlanListResource {
 	
 	@GET
 	public Response getPlanList() {
+		logger.debug("getPlanList()");
 		try {
 			PlanDataCollection collection = PlanManager.INSTANCE.getPlanDataCollection();
 			return Response.ok().entity(collection).header("Content-Type", MediaType.TEXT_XML).build();
@@ -26,6 +27,11 @@ public class PlanListResource {
 					.entity("Couldn't fetch the plan list - "
 							+ pe.getMessage()).type(MediaType.TEXT_PLAIN)
 					.build();
+		}catch(Throwable t){
+			logger.error("Error getting plan list: "+t.getMessage(),t);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error getting plan list - " + t.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
 		}
 	}
 }

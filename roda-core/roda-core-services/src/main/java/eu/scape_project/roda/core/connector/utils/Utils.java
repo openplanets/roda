@@ -2,6 +2,15 @@ package eu.scape_project.roda.core.connector.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -15,13 +24,24 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
+import eu.scape_project.model.File;
+import eu.scape_project.model.Identifier;
+import eu.scape_project.model.LifecycleState;
+import eu.scape_project.model.LifecycleState.State;
+import eu.scape_project.model.Representation;
+import eu.scape_project.util.ScapeMarshaller;
+import fedora.client.DataStream;
+import fedora.server.types.gen.Datastream;
 import pt.gov.dgarq.roda.core.BrowserHelper;
 import pt.gov.dgarq.roda.core.EditorHelper;
 import pt.gov.dgarq.roda.core.common.NoSuchRODAObjectException;
 import pt.gov.dgarq.roda.core.data.DescriptionObject;
 import pt.gov.dgarq.roda.core.data.RODAObject;
+import pt.gov.dgarq.roda.core.data.RepresentationFile;
+import pt.gov.dgarq.roda.core.data.RepresentationObject;
 import pt.gov.dgarq.roda.core.data.SearchParameter;
 import pt.gov.dgarq.roda.core.data.SearchResult;
 import pt.gov.dgarq.roda.core.data.SearchResultObject;
@@ -52,38 +72,45 @@ public class Utils {
     };
     
 	
-    public static DescriptionObject findById(String id,BrowserHelper helper){
+    public static DescriptionObject findById(String id,BrowserHelper helper) throws NoSuchRODAObjectException{
     	return findById(id, -1, helper);
     }
-	public static DescriptionObject findById(String id,int version,BrowserHelper helper){
-		DescriptionObject descriptionObject = null;
+    
+    
+    
+	public static DescriptionObject findById(String id,int version,BrowserHelper helper) throws NoSuchRODAObjectException{
+		try{
+			return helper.getDescriptionObject(id);
+		}catch(Throwable t){
+			logger.debug("Unable to get findDO with PID "+id);
+		}
 		try{
 			SearchParameter parameter = new DefaultSearchParameter(
 					new String[] { EadcSearchFields.UNITID },
 					id,
 					DefaultSearchParameter.MATCH_ALL_WORDS);
-
 			SearchResult sr =  helper.getFedoraClientUtility().getFedoraGSearch().advancedSearch(new SearchParameter[] {parameter}, 0, 1000, 500, 500);
 			SearchResultObject[] results = sr.getSearchResultObjects();
-			
-			if(results!=null && results.length>0){
-				Arrays.sort(results, dateComparator);
-				if(version==-1){	//current version
-					descriptionObject = results[results.length-1].getDescriptionObject();
-				}else if(version<=results.length && version>0){
-					descriptionObject = results[version-1].getDescriptionObject();
+			if(results==null || results.length==0){
+				throw new NoSuchRODAObjectException("The Description with id/pid '"+id+"' and version '"+version+"' doesn't exist...");
+			}else{
+				if(version==-1){
+					return results[0].getDescriptionObject();
+				}else{
+					String pid = results[0].getDescriptionObject().getPid();
+					Datastream[] datastreamHistory = helper.getFedoraClientUtility().getAPIM().getDatastreamHistory(pid, "EAD-C");
+					if(datastreamHistory.length<version){
+						throw new NoSuchRODAObjectException("The Description with id/pid '"+id+"' and version '"+version+"' doesn't exist...");
+					}else{
+						Datastream datastreamVersion = datastreamHistory[datastreamHistory.length-version];
+						return helper.getDescriptionObject(pid,datastreamVersion.getCreateDate());
+					}
 				}
 			}
-			if(descriptionObject==null){
-				descriptionObject = helper.getDescriptionObject(id);
-			}
-			if(descriptionObject==null){
-				throw new NoSuchRODAObjectException("The Description with id/pid '"+id+"' and version '"+version+"' doesn't exist...");
-			}
 		}catch(Exception e){
-	
+			logger.error(e.getMessage(),e);
 		}
-		return descriptionObject;
+		throw new NoSuchRODAObjectException("The Description with id/pid '"+id+"' and version '"+version+"' doesn't exist...");
 	}
 
 
@@ -96,7 +123,7 @@ public class Utils {
 			DescriptionObject defaultScapeDescriptionObject = null;
 			SearchParameter parameterTitle = new DefaultSearchParameter(
 					new String[] { EadcSearchFields.UNITTITLE },
-					"Connector subseries",
+					"Connector Fond",
 					DefaultSearchParameter.MATCH_ALL_WORDS);
 			
 			SearchResult sr =  browser.getFedoraClientUtility().getFedoraGSearch().advancedSearch(new SearchParameter[] {parameterTitle}, 0, 1, 500, 500);
@@ -113,7 +140,7 @@ public class Utils {
 				fondsDO.setLevel(DescriptionLevel.FONDS);
 				fondsDO.setCountryCode("PT");
 				fondsDO.setRepositoryCode("SCAPE");
-				fondsDO.setId("SCAPE-FOND");
+				fondsDO.setId("SCAPE");
 				fondsDO.setTitle("Connector Fond");
 				fondsDO.setDateInitial("1000");
 				fondsDO.setDateFinal("2500");
@@ -123,41 +150,7 @@ public class Utils {
 				fondsDO.setState(RODAObject.STATE_ACTIVE);
 				helper.modifyDescriptionObject(fondsDO);
 				
-				
-				DescriptionObject tempDObject = new DescriptionObject();
-				tempDObject.setLevel(DescriptionLevel.SUBFONDS);
-				tempDObject.setId("SCAPE-SUBFOND");
-				tempDObject.setCountryCode("PT");
-				tempDObject.setRepositoryCode("SCAPE");
-				tempDObject.setTitle("Connector Subfond");
-				tempDObject.setOrigination("Connector API");
-				tempDObject.setScopecontent("-");
-				tempDObject.setParentPID(fondsPID);
-				String subfondsPID = helper.createDescriptionObject(tempDObject);
-				
-				tempDObject = new DescriptionObject();
-				tempDObject.setLevel(DescriptionLevel.SERIES);
-				tempDObject.setId("SCAPE-SERIES");
-				tempDObject.setCountryCode("PT");
-				tempDObject.setRepositoryCode("SCAPE");
-				tempDObject.setTitle("Connector series");
-				tempDObject.setOrigination("Connector API");
-				tempDObject.setScopecontent("-");
-				tempDObject.setParentPID(subfondsPID);
-				String seriesPID = helper.createDescriptionObject(tempDObject);
-		
-				
-				tempDObject = new DescriptionObject();
-				tempDObject.setLevel(DescriptionLevel.SUBSERIES);
-				tempDObject.setId("SCAPE-SUBSERIES");
-				tempDObject.setCountryCode("PT");
-				tempDObject.setRepositoryCode("SCAPE");
-				tempDObject.setTitle("Connector subseries");
-				tempDObject.setOrigination("Connector API");
-				tempDObject.setScopecontent("-");
-				tempDObject.setParentPID(seriesPID);
-				String subSeriesPID = helper.createDescriptionObject(tempDObject);
-				defaultId = subSeriesPID;
+				defaultId = fondsPID;
 			}else{
 				defaultId = defaultScapeDescriptionObject.getPid(); 
 			}
@@ -177,11 +170,18 @@ public class Utils {
 					new String[] { EadcSearchFields.UNITID },
 					entityID,
 					DefaultSearchParameter.MATCH_ALL_WORDS);
-
 			SearchResult sr =  helper.getFedoraClientUtility().getFedoraGSearch().advancedSearch(new SearchParameter[] {parameter}, 0, 1000, 500, 500);
 			SearchResultObject[] results = sr.getSearchResultObjects();
-			for(int i=0;i<results.length;i++){
-				versions.add(""+i);
+			if(results==null || results.length==0){
+				throw new NoSuchRODAObjectException("The Description with id/pid '"+entityID+"' doesn't exist...");
+			}else{
+				String pid = results[0].getDescriptionObject().getPid();
+				Datastream[] datastreamHistory = helper.getFedoraClientUtility().getAPIM().getDatastreamHistory(pid, "EAD-C");
+				int i=1;
+				for(Datastream ds : datastreamHistory){
+					versions.add(""+i);
+					i++;
+				}
 			}
 		}catch(Exception e){
 	
@@ -242,4 +242,168 @@ public class Utils {
 			return null;
 		}
 	}
+
+
+	/*
+	public static Object getDescriptive(String id, int version, BrowserHelper helper) {
+		logger.debug("getDescriptive(id="+id+",version="+version+")");
+		try{
+			SearchParameter parameter = new DefaultSearchParameter(new String[] { EadcSearchFields.UNITID },id,DefaultSearchParameter.MATCH_ALL_WORDS);
+			SearchResult sr =  helper.getFedoraClientUtility().getFedoraGSearch().advancedSearch(new SearchParameter[] {parameter}, 0, 1000, 500, 500);
+			SearchResultObject[] results = sr.getSearchResultObjects();
+			if(results==null || results.length==0){
+				throw new NoSuchRODAObjectException("The Description with id/pid '"+id+"' and version '"+version+"' doesn't exist...");
+			}else{
+				String pid = results[0].getDescriptionObject().getPid();
+				Object descriptive = getDatastreamObject(pid,version,"DESCRIPTIVE",helper);
+				return descriptive;
+			}
+		}catch(Exception e){
+			logger.error(e.getMessage(),e);
+		}
+		return null;
+	}
+*/
+
+
+	public static Object getDatastreamObject(String id, int version,String datastreamName, BrowserHelper helper) throws NoSuchRODAObjectException, IOException {
+		Datastream[] datastreamHistory = helper.getFedoraClientUtility().getAPIM().getDatastreamHistory(id, datastreamName);
+		String date = null;
+		if(version==-1){
+			date = datastreamHistory[datastreamHistory.length-1].getCreateDate();
+		}else{
+			if(datastreamHistory.length<version){
+				throw new NoSuchRODAObjectException("The Description with id/pid '"+id+"' and version '"+version+"' doesn't exist...");
+			}else{
+				
+				Datastream datastreamVersion = datastreamHistory[datastreamHistory.length-version];
+				date = datastreamVersion.getCreateDate();
+			}
+		}
+		logger.debug("Date of Descriptive datastream: "+date);
+		if(date!=null){
+			InputStream is = helper.getFedoraClientUtility().getDatastream(id, datastreamName, date);
+			try{
+				JAXBContext jc = JAXBContext.newInstance(scape.dc.ElementContainer.class,scape.eadc.EadC.class,scape.mix20.Mix.class);
+		        Unmarshaller unmarshaller = jc.createUnmarshaller();
+		        return unmarshaller.unmarshal(is);
+			}catch(Exception e){
+				logger.error("Error unmarshalling DESCRIPTIVE datastream: "+e.getMessage(),e);
+			}	
+		}
+		return null;
+	}
+
+
+
+	public static LifecycleState getLifecycleState(DescriptionObject object) {
+		LifecycleState lcs = null;
+		if(object.getState()!=null){
+			logger.debug("STATE:"+object.getState());
+		}else{
+			logger.debug("STATE NULL");
+		}
+		if(object.getState()==null || object.getState().trim().equalsIgnoreCase("")){
+			lcs = new LifecycleState("", State.INGESTING);
+		}else if(object.getState().equalsIgnoreCase(RODAObject.STATE_INACTIVE)){
+			lcs = new LifecycleState("", State.INGESTING);
+		}else if(object.getState().equalsIgnoreCase(RODAObject.STATE_ACTIVE)){
+			lcs = new LifecycleState("", State.INGESTED);
+		}else if(object.getState().equalsIgnoreCase(RODAObject.STATE_DELETED)){
+			lcs = new LifecycleState("", State.INGEST_FAILED);
+		}else{
+			lcs = new LifecycleState("", State.OTHER);
+		}
+		return lcs;
+	}
+
+
+
+	public static List<Representation> getRepresentations(String id,int version, BrowserHelper helper,String coreURL) {
+		logger.debug("getRepresentations(id="+id+",version="+version+")");
+		List<Representation> representations = new ArrayList<Representation>();
+		try{
+			RepresentationObject[] ros = helper.getDORepresentations(id);
+			logger.debug("Number of representations:"+ros.length);
+			for(RepresentationObject ro : ros){
+				
+				List<File> files = new ArrayList<File>();
+				if(ro.getRootFile()!=null){
+					File f = new File.Builder().identifier(new Identifier(ro.getRootFile().getId())).technical(extractMetadataFromRepresentationFile(ro.getRootFile(), "TECHNICAL"))
+				            .uri(new URI(coreURL+ro.getRootFile().getAccessURL())).mimetype(ro.getRootFile().getMimetype()).build();
+							files.add(f);
+				}
+				if(ro.getPartFiles()!=null && ro.getPartFiles().length>0){
+					for(RepresentationFile rp : ro.getPartFiles()){
+						File f = new File.Builder().identifier(new Identifier(rp.getId())).technical(extractMetadataFromRepresentationFile(ro.getRootFile(), "TECHNICAL"))
+			            .uri(new URI(coreURL+rp.getAccessURL())).mimetype(rp.getMimetype()).build();
+						files.add(f);
+					}
+				}
+				
+				Object provenance = null;
+				Object rights = null;
+				Object source = null;
+				Object technical = null;
+				try{
+					provenance = getDatastreamObject(ro.getPid(), version, "PROVENANCE", helper);
+				}catch(Exception e){
+					logger.debug("No PROVENANCE datastream");
+				}
+				try{
+					rights = getDatastreamObject(ro.getPid(), version, "RIGHTS", helper);
+				}catch(Exception e){
+					logger.debug("No RIGHTS datastream");
+				}
+				try{
+					source = getDatastreamObject(ro.getPid(), version, "SOURCE", helper);
+				}catch(Exception e){
+					logger.debug("No SOURCE datastream");
+				}
+				try{
+					technical = getDatastreamObject(ro.getPid(), version, "TECHNICAL", helper);
+				}catch(Exception e){
+					logger.debug("No TECHNICAL datastream");
+				}
+				Representation rep = null;
+				if(provenance!=null || rights!=null || source!=null || technical!=null){
+					rep = new Representation.Builder(new Identifier(ro.getId())).title(ro.getLabel()).provenance(provenance).rights(rights).source(source).technical(technical).files(files).build();
+				}else{
+					rep = representationObjectToRepresentation(helper, ro,coreURL);
+				}
+				if(rep!=null){
+					representations.add(rep);
+				}
+			}
+		}catch(Exception e){
+			logger.error("Error while parsing representations:"+e.getMessage());
+		}
+		return representations;
+	}
+	
+	public static Representation representationObjectToRepresentation(BrowserHelper helper, RepresentationObject ro, String mainURL) throws URISyntaxException {
+		logger.debug("Converting RO "+ro.getPid() +" to Scape Representation");
+		List<File> files = new ArrayList<File>();
+		if(ro.getRootFile()!=null){
+			File f = new File.Builder().identifier(new Identifier(ro.getRootFile().getId())).technical(extractMetadataFromRepresentationFile(ro.getRootFile(), "TECHNICAL"))
+		            .uri(new URI(mainURL+ro.getRootFile().getAccessURL())).mimetype(ro.getRootFile().getMimetype()).build();
+					files.add(f);
+		}
+		if(ro.getPartFiles()!=null && ro.getPartFiles().length>0){
+			for(RepresentationFile rp : ro.getPartFiles()){
+				File f = new File.Builder().identifier(new Identifier(rp.getId())).technical(extractMetadataFromRepresentationFile(ro.getRootFile(), "TECHNICAL"))
+	            .uri(new URI(mainURL+rp.getAccessURL())).mimetype(rp.getMimetype()).build();
+				files.add(f);
+			}
+		}
+		Representation rep = new Representation.Builder(new Identifier(ro.getId()))
+        .files(files).build();
+		return rep;
+	}
+	
+	//TODO
+		public static Object extractMetadataFromRepresentationFile(RepresentationFile file, String metadataID) {
+			Mix m = new Mix();
+			return m;
+		}
 }

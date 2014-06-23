@@ -59,7 +59,7 @@ public class PlanSearchResource {
 			@QueryParam("version") final String version,
 			@QueryParam("startRecord") final int offset,
 			@QueryParam("maximumRecords") @DefaultValue("25") final int limit) {
-
+		logger.debug("searchPlans(operation="+operation+",query="+query+",luceneQuery="+luceneQuery+",version="+version+",offset="+offset+",limit="+limit+")");
 		if (!"searchRetrieve".equalsIgnoreCase(operation)) {
 			logger.error("Operation '" + operation
 					+ "' is not supported. Returning HTTP BAD_REQUEST");
@@ -209,6 +209,7 @@ public class PlanSearchResource {
 	@Path("reindex")
 	@Produces(MediaType.TEXT_PLAIN)
 	public Response reindex() {
+		logger.debug("reindex()");
 		try {
 
 			int indexedPlansCount = PlanManager.INSTANCE.reindexPlans();
@@ -233,7 +234,7 @@ public class PlanSearchResource {
 
 	private String getOCLCTranslatorQuery(String cqlQuery)
 			throws CQLParseException, ParseException, IOException {
-
+		logger.debug("getOCLCTranslatorQuery(cqlQuery="+cqlQuery+")");
 		CQLParser cqlParser = new CQLParser();
 		CQLNode cqlNode = cqlParser.parse(cqlQuery);
 

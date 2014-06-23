@@ -27,7 +27,14 @@ import javax.ws.rs.core.UriInfo;
 
 import org.apache.log4j.Logger;
 
+import pt.gov.dgarq.roda.core.data.PluginInfo;
+import pt.gov.dgarq.roda.core.data.Task;
+import pt.gov.dgarq.roda.core.plugins.PluginManager;
+import pt.gov.dgarq.roda.core.plugins.PluginManagerException;
+import pt.gov.dgarq.roda.core.scheduler.RODASchedulerException;
+import pt.gov.dgarq.roda.core.scheduler.SchedulerManager;
 import eu.scape_project.model.plan.PlanExecutionState;
+import eu.scape_project.model.plan.PlanExecutionState.ExecutionState;
 
 /**
  * JAX-RS Resource for Plan Execution States
@@ -44,13 +51,13 @@ public class PlanExecutionStateResource {
 	@Path("{id}")
 	public Response retrievePlanExecutionState(
 			@PathParam("id") final String planId, @Context UriInfo uriInfo) {
-
+		logger.debug("retrievePlanExecutionState(planID="+planId+")");
 		try {
-
 			Plan plan = PlanManager.INSTANCE.getPlan(planId);
-
 			logger.info("Plan " + planId + " exists. Sending response...");
-
+			if(plan.getPlanExecutionStateCollection()==null){
+				logger.error("plan.getPlanExecutionsStateCollection()==null...");
+			}
 			return Response.ok().entity(plan.getPlanExecutionStateCollection())
 					.header("Content-Type", MediaType.TEXT_XML).build();
 
@@ -67,6 +74,11 @@ public class PlanExecutionStateResource {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
 					.entity("Couldn't retrieve plan - " + e.getMessage())
 					.type(MediaType.TEXT_PLAIN).build();
+		} catch(Throwable t){
+			logger.error(t.getMessage(),t);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error while retrieving plan execution state - " + t.getMessage())
+					.type(MediaType.TEXT_PLAIN).build();
 		}
 	}
 
@@ -74,63 +86,89 @@ public class PlanExecutionStateResource {
 	@Path("{id}")
 	public Response addExecutionState(@PathParam("id") final String planId,
 			PlanExecutionState state) {
-
-		try {
-
-			Plan plan = PlanManager.INSTANCE.getPlan(planId);
-
-			logger.info("State has date " + state.getTimeStamp()
-					+ ". Changing the date to NOW");
-			state.getTimeStamp().setTime(new Date().getTime());
-			logger.info("State date changed to " + state.getTimeStamp());
-
-			plan.addPlanExecutionState(state);
-			
-			logger.info("Plan " + planId + " state added: "
-					+ state.getState().toString());
-
-			/*
-			if (state.equals(ExecutionState.EXECUTION_IN_PROGRESS)) {
-
-				try {
-
-					PluginInfo executePlanPluginInfo = PluginManager
-							.getDefaultPluginManager()
-							.getPluginInfo(
-									"pt.keep.roda.core.plugins.ExecutePlanPlugin");
-
-					Task task = new Task("plan", "description", "admin",
-							new Date(), 0, 1, true, false, false,
-							executePlanPluginInfo);
-
-					Task addedTask = SchedulerManager
-							.getDefaultSchedulerManager().addTask(task);
-
-				} catch (PluginManagerException e) {
-				} catch (RODASchedulerException e) {
-				}
-
-			} else {
-
+		logger.debug("addExecutionState(planID="+planId+")");
+		if(state==null){
+			logger.debug("State null");
+			return Response.status(406).entity("State NULL").build();
+		}else{
+			if(state.getState()==null){
+				logger.debug("state.getState()==null");
+			}else{
+				logger.debug("state.getState()=='"+state.getState()+"'");
 			}
-			*/
-
-
-			return Response.ok().build();
-
-		} catch (NoSuchPlanException e) {
-			logger.error(
-					"Plan " + planId + " doesn't exist - " + e.getMessage(), e);
-			return Response
-					.status(Response.Status.NOT_FOUND)
-					.entity("Plan " + planId + " doesn't exist - "
-							+ e.getMessage()).type(MediaType.TEXT_PLAIN)
-					.build();
-		} catch (PlanException e) {
-			logger.error("Couldn't retrieve plan - " + e.getMessage(), e);
-			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-					.entity("Couldn't retrieve plan - " + e.getMessage())
-					.type(MediaType.TEXT_PLAIN).build();
+			if(state.getTimeStamp()==null){
+				logger.debug("state.getTimeStamp()==null");
+			}else{
+				logger.debug("state.getTimeStamp()=='"+state.getTimeStamp()+"'");
+			}
+			
+			try {
+				Plan plan = PlanManager.INSTANCE.getPlan(planId);
+				logger.info("State has date " + state.getTimeStamp()
+						+ ". Changing the date to NOW");
+				if(state.getTimeStamp()==null){
+					state.setTimeStamp(new Date());
+				}
+				state.getTimeStamp().setTime(new Date().getTime());
+				logger.info("State date changed to " + state.getTimeStamp());
+	
+				logger.debug("Adding state to plan...");
+				plan.addPlanExecutionState(state);
+				PlanManager.INSTANCE.addPlanToIndex(plan);
+				if(state.getState()!=null){
+					logger.info("Plan " + planId + " state added: "+ state.getState().toString());
+				}
+	
+				/*
+				if (state.equals(ExecutionState.EXECUTION_IN_PROGRESS)) {
+	
+					try {
+	
+						PluginInfo executePlanPluginInfo = PluginManager
+								.getDefaultPluginManager()
+								.getPluginInfo(
+										"pt.keep.roda.core.plugins.ExecutePlanPlugin");
+	
+						Task task = new Task("plan", "description", "admin",
+								new Date(), 0, 1, true, false, false,
+								executePlanPluginInfo);
+	
+						Task addedTask = SchedulerManager
+								.getDefaultSchedulerManager().addTask(task);
+	
+					} catch (PluginManagerException e) {
+						
+					} catch (RODASchedulerException e) {
+						
+					}
+	
+				} else {
+	
+				}*/
+				
+	
+	
+				return Response.ok().build();
+	
+			} catch (NoSuchPlanException e) {
+				logger.error(
+						"Plan " + planId + " doesn't exist - " + e.getMessage(), e);
+				return Response
+						.status(Response.Status.NOT_FOUND)
+						.entity("Plan " + planId + " doesn't exist - "
+								+ e.getMessage()).type(MediaType.TEXT_PLAIN)
+						.build();
+			} catch (PlanException e) {
+				logger.error("Couldn't retrieve plan - " + e.getMessage(), e);
+				return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+						.entity("Couldn't retrieve plan - " + e.getMessage())
+						.type(MediaType.TEXT_PLAIN).build();
+			} catch (Throwable e) {
+				logger.error("Error adding execution state - " + e.getMessage(), e);
+				return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+						.entity("Couldn't retrieve plan - " + e.getMessage())
+						.type(MediaType.TEXT_PLAIN).build();
+			}
 		}
 
 	}
