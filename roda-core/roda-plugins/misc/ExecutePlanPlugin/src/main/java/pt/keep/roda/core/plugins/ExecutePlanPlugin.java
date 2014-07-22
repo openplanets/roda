@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -40,11 +41,17 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.axis.wsdl.symbolTable.Parameter;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthenticationException;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.FileEntity;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -78,7 +85,6 @@ import pt.gov.dgarq.roda.core.plugins.PluginException;
 import pt.gov.dgarq.roda.ingest.siputility.builders.RepresentationBuilder;
 import pt.gov.dgarq.roda.plugins.converters.common.LocalRepresentationObject;
 import pt.gov.dgarq.roda.util.CommandException;
-import pt.gov.dgarq.roda.util.CommandUtility;
 import pt.gov.dgarq.roda.util.TempDir;
 
 /**
@@ -87,6 +93,34 @@ import pt.gov.dgarq.roda.util.TempDir;
  */
 public class ExecutePlanPlugin extends AbstractPlugin {
 	private static Logger logger = Logger.getLogger(ExecutePlanPlugin.class);
+			
+	public static PluginParameter PARAMETER_TAVERNA_POST_URL() {
+		return new PluginParameter("tavernaPostURL",PluginParameter.TYPE_STRING, null, true, false,"Taverna POST URL");
+	}
+	public static PluginParameter PARAMETER_TAVERNA_USERNAME() {
+		return new PluginParameter("tavernaUsername",PluginParameter.TYPE_STRING, null, true, false,"Taverna username");
+	}
+	public static PluginParameter PARAMETER_TAVERNA_PASSWORD() {
+		return new PluginParameter("tavernaPassword",PluginParameter.TYPE_STRING, null, true, false,"Taverna password");
+	}
+	public static PluginParameter PARAMETER_XPATH_SELECT_WORKFLOW() {
+		return new PluginParameter("xpathSelectWorkflow",PluginParameter.TYPE_STRING, null, true, false,"XPath select workflow");
+	}
+	public static PluginParameter PARAMETER_XPATH_SELECT_IDS() {
+		return new PluginParameter("xpathSelectIDs",PluginParameter.TYPE_STRING, null, true, false,"XPath select IDs");
+	}
+	public static PluginParameter PARAMETER_WORKFLOW_INPUT_PORT() {
+		return new PluginParameter("workflowInputPort",PluginParameter.TYPE_STRING, null, true, false,"Workflow input port");
+	}
+	public static PluginParameter PARAMETER_WORKFLOW_OUTPUT_PORT() {
+		return new PluginParameter("workflowOutputPort",PluginParameter.TYPE_STRING, null, true, false,"Workflow output port");
+	}
+	public static PluginParameter PARAMETER_WORKFLOW_EXTRA_PORTS() {
+		return new PluginParameter("workflowExtraPorts",PluginParameter.TYPE_STRING, null, true, false,"Workflow extra ports");
+	}
+			
+	
+	
 	private String RODA_HOME = null;
 	private File planFile = null;
 
@@ -94,13 +128,23 @@ public class ExecutePlanPlugin extends AbstractPlugin {
 	private Uploader rodaUploader = null;
 	private Downloader rodaDownloader = null;
 
-	private static String CONFIGURATION_FILENAME = "ExecutePlan-misc.properties";
 	private static String PLAN_FILENAME = "plan.xml";
 	private static String WORKFLOW_FILENAME = "workflow.t2flow";
 	/**
-	 * The path to the taverna command.
+	 * The url for taverna
 	 */
-	private String taverna_bin;
+	private String taverna_post_url;
+	
+	/**
+	 * The taverna username
+	 */
+	private String taverna_username;
+	
+	/**
+	 * The taverna password
+	 */
+	private String taverna_password;
+	
 	/**
 	 * The XPath expression to select the file IDs from a plan.
 	 */
@@ -133,7 +177,6 @@ public class ExecutePlanPlugin extends AbstractPlugin {
 	 * @see Plugin#init()
 	 */
 	public void init() throws PluginException {
-		try {
 			if (System.getProperty("roda.home") != null) {
 				RODA_HOME = System.getProperty("roda.home");
 			} else if (System.getenv("RODA_HOME") != null) {
@@ -145,50 +188,33 @@ public class ExecutePlanPlugin extends AbstractPlugin {
 				throw new PluginException(
 						"RODA_HOME enviroment variable and ${roda.home} system property are not set.");
 			}
-			final File pluginsConfigDirectory = new File(new File(RODA_HOME,
-					"config"), "plugins");
 
-			final File configFile = new File(pluginsConfigDirectory,
-					CONFIGURATION_FILENAME);
-			final PropertiesConfiguration configuration = new PropertiesConfiguration();
+			taverna_post_url = getParameterValues().get(PARAMETER_TAVERNA_POST_URL().getName());
+			logger.debug("taverna_post_url=" + taverna_post_url);
+			
+			taverna_username = getParameterValues().get(PARAMETER_TAVERNA_USERNAME().getName());
+			logger.debug("taverna_username=" + taverna_username);
+			
+			taverna_password = getParameterValues().get(PARAMETER_TAVERNA_PASSWORD().getName());
+			logger.debug("taverna_password=" + taverna_password);
+			
 
-			if (configFile.isFile()) {
-				configuration.load(configFile);
-				logger.info("Loading configuration file from " + configFile);
-			} else {
-				configuration.load(getClass().getResourceAsStream(
-						CONFIGURATION_FILENAME));
-				logger.info("Loading default configuration file from resources");
-			}
-
-			taverna_bin = configuration.getString("taverna_bin");
-			logger.debug("taverna_bin=" + taverna_bin);
-
-			xpathSelectIDs = configuration.getString("xpathSelectIDs");
+			xpathSelectIDs = getParameterValues().get(PARAMETER_XPATH_SELECT_IDS().getName());
 			logger.debug("xpathSelectIDs=" + xpathSelectIDs);
 
-			xpathSelectWorkflow = configuration
-					.getString("xpathSelectWorkflow");
+			xpathSelectWorkflow = getParameterValues().get(PARAMETER_XPATH_SELECT_WORKFLOW().getName());
 			logger.debug("xpathSelectWorkflow=" + xpathSelectWorkflow);
 
-			workflowInputPort = configuration.getString("workflowInputPort");
+			workflowInputPort = getParameterValues().get(PARAMETER_WORKFLOW_INPUT_PORT().getName());
 			logger.debug("workflowInputPort=" + workflowInputPort);
 
-			workflowOutputPort = configuration.getString("workflowOutputPort");
+			workflowOutputPort = getParameterValues().get(PARAMETER_WORKFLOW_OUTPUT_PORT().getName());
 			logger.debug("workflowOutputPort=" + workflowOutputPort);
 
-			workflowExtraPorts = configuration
-					.getStringArray("workflowExtraPorts");
+			workflowExtraPorts = getParameterValues().get(PARAMETER_WORKFLOW_INPUT_PORT().getName()).split(".");
 			logger.debug("workflowExtraPorts="
 					+ Arrays.asList(workflowExtraPorts));
 
-		} catch (ConfigurationException ex) {
-			logger.debug(
-					"Error reading plugin configuration - " + ex.getMessage(),
-					ex);
-			throw new PluginException("Error reading plugin configuration - "
-					+ ex.getMessage(), ex);
-		}
 
 		planFile = new File(new File(RODA_HOME, "data"), PLAN_FILENAME);
 
@@ -209,6 +235,8 @@ public class ExecutePlanPlugin extends AbstractPlugin {
 				AbstractPlugin.PARAMETER_RODA_CORE_USERNAME().getName());
 		final String rodaClientPassword = getParameterValues().get(
 				AbstractPlugin.PARAMETER_RODA_CORE_PASSWORD().getName());
+		
+		
 
 		try {
 
@@ -278,7 +306,10 @@ public class ExecutePlanPlugin extends AbstractPlugin {
 	 */
 	public List<PluginParameter> getParameters() {
 		return Arrays.asList(PARAMETER_RODA_CORE_URL(),
-				PARAMETER_RODA_CORE_USERNAME(), PARAMETER_RODA_CORE_PASSWORD());
+				PARAMETER_RODA_CORE_USERNAME(), PARAMETER_RODA_CORE_PASSWORD(),
+				PARAMETER_TAVERNA_POST_URL(),PARAMETER_TAVERNA_USERNAME(),PARAMETER_TAVERNA_PASSWORD(), 
+				PARAMETER_XPATH_SELECT_WORKFLOW(),PARAMETER_XPATH_SELECT_IDS(),
+				PARAMETER_WORKFLOW_INPUT_PORT(),PARAMETER_WORKFLOW_OUTPUT_PORT(),PARAMETER_WORKFLOW_EXTRA_PORTS());
 	}
 
 	/**
@@ -1159,11 +1190,24 @@ public class ExecutePlanPlugin extends AbstractPlugin {
 			final String outputDir = inputValueFile.getAbsolutePath()
 					+ "_taverna/";
 
-			final String executionOutput = CommandUtility.execute(taverna_bin,
+			HttpClient client = new DefaultHttpClient();
+			HttpPost post = new HttpPost(taverna_post_url);
+	        post.setEntity(new FileEntity(inputValueFile));
+	        if(taverna_username!=null && !taverna_username.trim().equals("")){
+	        	post.addHeader(new BasicScheme().authenticate(new UsernamePasswordCredentials(taverna_username, taverna_password), post));
+	        }
+	        HttpResponse resp = client.execute(post);
+	        InputStream content = resp.getEntity().getContent();
+	        StringWriter writer = new StringWriter();
+	        IOUtils.copy(content, writer, "UTF-8");
+	        final String executionOutput = writer.toString();
+	        
+	        /*
+			final String executionOutput =  CommandUtility.execute(taverna_bin,
 					"-outputdir", outputDir, "-inputvalue", workflowInputPort,
 					inputValueFile.getAbsolutePath(),
 					workflowFile.getAbsolutePath());
-
+*/
 			logger.info("Workflow executed with sucess!");
 			logger.debug("Command output: " + executionOutput);
 
@@ -1178,16 +1222,13 @@ public class ExecutePlanPlugin extends AbstractPlugin {
 			throw new ExecutePlanException("Error getting file " + fileID
 					+ " - " + e.getMessage(), e);
 		} catch (IOException e) {
-			logger.error("Error getting file - " + e.getMessage());
-			throw new ExecutePlanException("Error getting file " + fileID
+			logger.error("Authentication error while executing plan in file - " + e.getMessage());
+			throw new ExecutePlanException("Authentication error while executing plan in file " + fileID
 					+ " - " + e.getMessage(), e);
-		} catch (CommandException e) {
-			logger.error("Error executing taverna workflow in file " + fileID
-					+ " - " + e.getMessage());
-			logger.debug("Command output: " + e.getOutput());
-			throw new ExecutePlanException(
-					"Error executing taverna workflow in file " + fileID
-							+ " - " + e.getMessage(), e);
+		} catch (AuthenticationException e) {
+			logger.error("Authentication error while executing plan in file - " + e.getMessage());
+			throw new ExecutePlanException("Authentication error while executing plan in file " + fileID
+					+ " - " + e.getMessage(), e);
 		} finally {
 
 			if (inputValueFile != null) {

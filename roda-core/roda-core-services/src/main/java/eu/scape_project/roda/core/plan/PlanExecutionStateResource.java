@@ -35,6 +35,7 @@ import pt.gov.dgarq.roda.core.scheduler.RODASchedulerException;
 import pt.gov.dgarq.roda.core.scheduler.SchedulerManager;
 import eu.scape_project.model.plan.PlanExecutionState;
 import eu.scape_project.model.plan.PlanExecutionState.ExecutionState;
+import eu.scape_project.model.plan.PlanExecutionStateCollection;
 
 /**
  * JAX-RS Resource for Plan Execution States
@@ -51,12 +52,18 @@ public class PlanExecutionStateResource {
 	@Path("{id}")
 	public Response retrievePlanExecutionState(
 			@PathParam("id") final String planId, @Context UriInfo uriInfo) {
-		logger.debug("retrievePlanExecutionState(planID="+planId+")");
+		logger.debug("!!!!!!!!!!!!!!!!!!retrievePlanExecutionState(planID="+planId+")");
 		try {
 			Plan plan = PlanManager.INSTANCE.getPlan(planId);
 			logger.info("Plan " + planId + " exists. Sending response...");
 			if(plan.getPlanExecutionStateCollection()==null){
 				logger.error("plan.getPlanExecutionsStateCollection()==null...");
+			}else{
+				PlanExecutionStateCollection pesc = plan.getPlanExecutionStateCollection();
+				logger.error("!!!!!!!!! "+plan.getPlanExecutionStateCollection().executionStates.size());
+				for(PlanExecutionState pes : pesc.executionStates){
+					logger.debug(pes.getTimeStamp()+" - "+pes.getState());
+				}
 			}
 			return Response.ok().entity(plan.getPlanExecutionStateCollection())
 					.header("Content-Type", MediaType.TEXT_XML).build();

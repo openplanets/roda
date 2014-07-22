@@ -1,5 +1,8 @@
 package eu.scape_project.roda.core.plan;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -8,7 +11,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -25,15 +30,25 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+import javax.xml.transform.Result;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.util.DateParser;
 import org.w3c.util.InvalidDateException;
@@ -470,21 +485,50 @@ public class Plan {
 	 * @throws PlanException
 	 *             if the Plan directory is not set
 	 */
-	public InputStream getDataInputStream() throws PlanException {
+	public InputStream getDataInputStream(boolean filter) throws PlanException {
 		if (getDirectory() == null) {
 			throw new PlanException("Plan directory is not set");
 		} else {
 			File dataFile = new File(getDirectory(), getDataFilename());
-
 			InputStream stream = null;
+			if(!filter){
+				try {
 
-			try {
+					stream = new FileInputStream(dataFile);
+		
+					} catch (FileNotFoundException e) {
+					logger.debug("Plan " + getId() + " doesn't have data yet - "
+					+ e.getMessage(), e);
+					}
 
-				stream = new FileInputStream(dataFile);
-
-			} catch (FileNotFoundException e) {
-				logger.debug("Plan " + getId() + " doesn't have data yet - "
-						+ e.getMessage(), e);
+				return stream;
+			}else{
+			
+				try {
+					DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+					dbf.setNamespaceAware(true);
+					dbf.setValidating(false);
+					DocumentBuilder db = dbf.newDocumentBuilder();
+					
+					Document doc = db.parse(new FileInputStream(dataFile));
+					
+					int size = doc.getElementsByTagName("data").getLength();
+					for(int i=0;i<size;i++){
+						Element element = (Element) doc.getElementsByTagName("data").item(0);
+						element.getParentNode().removeChild(element);
+					}
+					
+					
+	
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+				Source xmlSource = new DOMSource(doc);
+				Result outputTarget = new StreamResult(outputStream);
+				TransformerFactory.newInstance().newTransformer().transform(xmlSource, outputTarget);
+				stream = new ByteArrayInputStream(outputStream.toByteArray());
+				} catch (Exception e) {
+					logger.debug("Plan " + getId() + " doesn't have data yet - "
+							+ e.getMessage(), e);
+				}
 			}
 
 			return stream;
@@ -950,4 +994,7 @@ public class Plan {
 		return planData;
 	}
 
+	
+	
+	
 }

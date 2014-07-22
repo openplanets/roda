@@ -324,14 +324,6 @@ public class DataModelUtils {
 	}
 
 
-	public File representationFileToFile(RepresentationFile rf) throws URISyntaxException{
-		logger.debug("Converting RF "+rf.getId() +" to Scape File");
-		File f = new File.Builder().identifier(new Identifier(rf.getId()))
-                .uri(new URI(rf.getAccessURL()))
-                .technical(rf).mimetype(rf.getMimetype()).build();
-		return f;
-	}
-
 
 	public Representation representationObjectToRepresentation(BrowserHelper helper, RepresentationObject ro, String mainURL) throws URISyntaxException {
 		logger.debug("Converting RO "+ro.getPid() +" to Scape Representation");

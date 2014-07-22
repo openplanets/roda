@@ -77,5 +77,11 @@
 			<groupId>axis</groupId>
 			<artifactId>axis</artifactId>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.2.1</version>
+		</dependency>
 	</dependencies>
 </project>

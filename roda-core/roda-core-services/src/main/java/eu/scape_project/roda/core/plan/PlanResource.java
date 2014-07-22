@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -115,12 +117,18 @@ public class PlanResource {
 	}
 	
 	@GET
-	public Response getPlan(@PathParam("id") final String id) {
+	public Response getPlan(@PathParam("id") final String id, @QueryParam("noData")@DefaultValue("false") final String noData) {
 		logger.debug("getPlan(id="+id+")");
 		try {
 
 			Plan plan = PlanManager.INSTANCE.getPlan(id);
-			InputStream dataInputStream = plan.getDataInputStream();
+			
+			boolean nd=false;
+			if(noData.equalsIgnoreCase("true")){
+				nd=true;
+			}
+			
+			InputStream dataInputStream = plan.getDataInputStream(nd);
 
 			logger.info("Plan "
 					+ id

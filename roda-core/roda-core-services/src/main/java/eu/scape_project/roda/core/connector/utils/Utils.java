@@ -24,6 +24,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
+import org.antlr.grammar.v3.ANTLRv3Parser.throwsSpec_return;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -267,8 +268,18 @@ public class Utils {
 
 
 	public static Object getDatastreamObject(String id, int version,String datastreamName, BrowserHelper helper) throws NoSuchRODAObjectException, IOException {
+		logger.debug("getDatastreamObject(id="+id+",version="+version+",datastreamname="+datastreamName+")");
 		Datastream[] datastreamHistory = helper.getFedoraClientUtility().getAPIM().getDatastreamHistory(id, datastreamName);
 		String date = null;
+		
+		if(datastreamHistory==null){
+			logger.debug("Datastream history nulll");
+		}else{
+			logger.debug("Datastreamsize: "+datastreamHistory.length);
+		}
+		if(datastreamHistory==null || datastreamHistory.length==0){
+			throw new NoSuchRODAObjectException();
+		}
 		if(version==-1){
 			date = datastreamHistory[datastreamHistory.length-1].getCreateDate();
 		}else{
