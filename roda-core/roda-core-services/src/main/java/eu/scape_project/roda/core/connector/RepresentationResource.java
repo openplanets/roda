@@ -10,6 +10,7 @@ import java.net.URISyntaxException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -170,6 +171,71 @@ static final private Logger logger = Logger.getLogger(RepresentationResource.cla
 		} catch (IOException ioe) {
 			logger.error("Error updating representation - " + ioe.getMessage(), ioe);
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error updating representation - " + ioe.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		}
+		
+	}
+	
+	@POST
+	@Path("{entityID}")
+	@Consumes("application/xml")
+	public Response createRepresentation(@Context HttpServletRequest req,@PathParam("entityID") String entityID, byte[] binaryRepresentation) {
+		logger.debug("createRepresentation(entityID='"+entityID+"')");
+		Response r = null;
+		try {
+			
+			BrowserHelper browser = HelperUtils.getBrowserHelper(req, getClass());
+			EditorHelper editor = HelperUtils.getEditorHelper(req, getClass());
+			IngestHelper ingest = HelperUtils.getIngestHelper(req, getClass());
+			Uploader uploader = HelperUtils.getUploader(req, getClass());
+			
+			logger.debug("Representation deserialization...");
+			Representation newRepresentation = ScapeMarshaller.newInstance().deserialize(Representation.class, new ByteArrayInputStream(binaryRepresentation));
+
+			
+			
+			if(browser!=null){
+				logger.debug("Find representation:"+entityID);
+				DescriptionObject o = Utils.findById(entityID, browser);
+				logger.debug("DO PID:"+o.getPid());
+				logger.debug("Getting DO representations...");
+				RepresentationObject[] ros = browser.getDORepresentations(o.getPid());
+				logger.debug("Number of representations:"+ros.length);
+				RepresentationObject newRepresentationObject = DataModelUtils.getInstance(browser, editor).representationToRepresentationObject(newRepresentation);
+				String repID = IngestionUtils.getInstance().createRepresentation(o.getPid(),newRepresentationObject,ingest,uploader,newRepresentation.getFiles());
+				r = Response.status(201).entity(repID).build();
+				
+			}else{
+				logger.error("Unable to get helpers");
+				r = Response.status(Status.INTERNAL_SERVER_ERROR).entity("Unable to get helpers").type(MediaType.TEXT_PLAIN).build();
+			}
+			return r;
+		} catch(RODAServiceException rse){
+			logger.error("Couldn't retrieve entity - " + rse.getMessage(), rse);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Couldn't retrieve entity - " + rse.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (JAXBException je) {
+			logger.error("Error serializing Representation - " + je.getMessage(), je);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error serializing Representation  - " + je.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (UnsupportedEncodingException uee) {
+			logger.error("Error creating string from stream - " + uee.getMessage(), uee);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error creating string from stream - " + uee.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (ConfigurationException ce) {
+			logger.error("Error creating helper - " + ce.getMessage(), ce);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error creating helper - " + ce.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (FedoraClientException fce) {
+			logger.error("Error creating helper - " + fce.getMessage(), fce);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error creating helper - " + fce.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (MalformedURLException mue) {
+			logger.error("Error creating helper - " + mue.getMessage(), mue);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error creating helper - " + mue.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (UploadException ue) {
+			logger.error("Error updating representation - " + ue.getMessage(), ue);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error updating representation - " + ue.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (IOException ioe) {
+			logger.error("Error updating representation - " + ioe.getMessage(), ioe);
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error updating representation - " + ioe.getMessage()).type(MediaType.TEXT_PLAIN).build();
+		} catch (NoSuchRODAObjectException e) {
+			logger.error("Could not find entity - "+entityID);
+			return Response.status(Response.Status.NOT_FOUND).entity("Could not find entity - "+entityID + ": "+e.getMessage()).type(MediaType.TEXT_PLAIN).build();
 		}
 		
 	}

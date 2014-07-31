@@ -112,17 +112,17 @@ public class BrowserHelper {
 		this.rodaNAHandleURL = configuration.getString("rodaNAHandleURL");
 	}
 
-        /**
-         * Returns the underlying {@link FedoraClientUtility} used to access Fedora
-         * APIs.
-         * 
-         * @return the underlying {@link FedoraClientUtility}.
-         */
-        public FedoraClientUtility getFedoraClientUtility() {
-                return fedoraClientUtility;
-        }
+	/**
+	 * Returns the underlying {@link FedoraClientUtility} used to access Fedora
+	 * APIs.
+	 * 
+	 * @return the underlying {@link FedoraClientUtility}.
+	 */
+	public FedoraClientUtility getFedoraClientUtility() {
+		return fedoraClientUtility;
+	}
 
-        /**
+	/**
 	 * Returns the {@link RODAObject} with the given PID.
 	 * 
 	 * @param pid
@@ -196,8 +196,9 @@ public class BrowserHelper {
 			return this.fedoraRISearch.getRODAObjects(contentAdapter);
 
 		} catch (FedoraRISearchException e) {
-			logger.debug("Exception getting RODAObjects from RI Search - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Exception getting RODAObjects from RI Search - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Exception getting RODAObjects from RI Search - "
 							+ e.getMessage(), e);
@@ -392,7 +393,7 @@ public class BrowserHelper {
 
 	}
 
-	public DescriptionObject getDescriptionObject(String doPID,String date)
+	public DescriptionObject getDescriptionObject(String doPID, String date)
 			throws NoSuchRODAObjectException, InvalidDescriptionLevel,
 			BrowserException {
 
@@ -401,7 +402,7 @@ public class BrowserHelper {
 		try {
 
 			InputStream eadcInputStream = this.fedoraClientUtility
-					.getDatastream(doPID, descriptionObjectDatastreamID,date);
+					.getDatastream(doPID, descriptionObjectDatastreamID, date);
 
 			DescriptionObject dObject = EadCHelper.newInstance(eadcInputStream)
 					.getDescriptionObject(sdo, sdo.getParentPID(),
@@ -425,6 +426,7 @@ public class BrowserHelper {
 		}
 
 	}
+
 	/**
 	 * Returns a list of all Description Object PIDs.
 	 * 
@@ -934,13 +936,13 @@ public class BrowserHelper {
 			}
 
 		} catch (FedoraRISearchException e) {
-			logger.debug("Error getting preservation object - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Error getting preservation object - " + e.getMessage(), e);
 			throw new BrowserException("Error getting preservation object - "
 					+ e.getMessage(), e);
 		} catch (Throwable e) {
-			logger.debug("Error getting preservation object - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Error getting preservation object - " + e.getMessage(), e);
 			throw new BrowserException("Error getting preservation object - "
 					+ e.getMessage(), e);
 		}
@@ -998,10 +1000,9 @@ public class BrowserHelper {
 					.getSimpleRepresentationPreservationObjectCount(filter);
 
 		} catch (FedoraRISearchException e) {
-			logger
-					.debug(
-							"Exception getting SimpleRepresentationPreservationObject count from RI Search - "
-									+ e.getMessage(), e);
+			logger.debug(
+					"Exception getting SimpleRepresentationPreservationObject count from RI Search - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Exception getting SimpleRepresentationPreservationObject count from RI Search - "
 							+ e.getMessage(), e);
@@ -1059,8 +1060,8 @@ public class BrowserHelper {
 					.getSimpleRepresentationPreservationObject(poPID));
 
 		} catch (FedoraRISearchException e) {
-			logger.error("Error getting preservation object - "
-					+ e.getMessage(), e);
+			logger.error(
+					"Error getting preservation object - " + e.getMessage(), e);
 			throw new BrowserException("Error getting preservation object - "
 					+ e.getMessage(), e);
 		}
@@ -1178,8 +1179,9 @@ public class BrowserHelper {
 					.getSimpleEventPreservationObject(epoPID));
 
 		} catch (FedoraRISearchException e) {
-			logger.debug("Exception getting event preservation object - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Exception getting event preservation object - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Exception getting event preservation object - "
 							+ e.getMessage(), e);
@@ -1239,8 +1241,9 @@ public class BrowserHelper {
 					.getRODAObject(apoPID));
 
 		} catch (FedoraRISearchException e) {
-			logger.debug("Exception getting agent preservation object - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Exception getting agent preservation object - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Exception getting agent preservation object - "
 							+ e.getMessage(), e);
@@ -1357,20 +1360,20 @@ public class BrowserHelper {
 		RODAObjectPermissions permissions = getRODAObjectPermissions(pid);
 
 		List<String> modifyUsers = Arrays.asList(permissions.getModifyUsers());
-		List<String> modifyGroups = new ArrayList<String>(Arrays
-				.asList(permissions.getModifyGroups()));
+		List<String> modifyGroups = new ArrayList<String>(
+				Arrays.asList(permissions.getModifyGroups()));
 		// Intersect modifyGroups with all user groups
 		modifyGroups.retainAll(Arrays.asList(user.getAllGroups()));
 
 		List<String> removeUsers = Arrays.asList(permissions.getRemoveUsers());
-		List<String> removeGroups = new ArrayList<String>(Arrays
-				.asList(permissions.getRemoveGroups()));
+		List<String> removeGroups = new ArrayList<String>(
+				Arrays.asList(permissions.getRemoveGroups()));
 		// Intersect removeGroups with all user groups
 		removeGroups.retainAll(Arrays.asList(user.getAllGroups()));
 
 		List<String> grantUsers = Arrays.asList(permissions.getGrantUsers());
-		List<String> grantGroups = new ArrayList<String>(Arrays
-				.asList(permissions.getGrantGroups()));
+		List<String> grantGroups = new ArrayList<String>(
+				Arrays.asList(permissions.getGrantGroups()));
 		// Intersect grantGroups with all user groups
 		grantGroups.retainAll(Arrays.asList(user.getAllGroups()));
 
@@ -1674,8 +1677,12 @@ public class BrowserHelper {
 				}
 			});
 
-			RepresentationFile rootFile = repFiles.get(0);
-			repFiles.remove(0);
+			RepresentationFile rootFile = null;
+			
+			if (repFiles.size() > 0) {
+				rootFile = repFiles.get(0);
+				repFiles.remove(0);
+			}
 			RepresentationFile[] partFiles = repFiles
 					.toArray(new RepresentationFile[repFiles.size()]);
 
@@ -1694,12 +1701,13 @@ public class BrowserHelper {
 
 		// String accessURL = String.format("/Access?pid=%1$s&id=%2$s", roPID,
 		// datastreamDef.getID());
-		String accessURL = String.format("/get/%1$s/%2$s", roPID, datastreamDef
-				.getID());
+		String accessURL = String.format("/get/%1$s/%2$s", roPID,
+				datastreamDef.getID());
 
 		// TODO: find out the size of a datastream
-		return new RepresentationFile(datastreamDef.getID(), datastreamDef
-				.getLabel(), datastreamDef.getMIMEType(), 0, accessURL);
+		return new RepresentationFile(datastreamDef.getID(),
+				datastreamDef.getLabel(), datastreamDef.getMIMEType(), 0,
+				accessURL);
 	}
 
 	private RepresentationFile getRepresentationFileFromDatastream(
@@ -1707,12 +1715,12 @@ public class BrowserHelper {
 
 		// String accessURL = String.format("/Access?pid=%1$s&id=%2$s", roPID,
 		// datastream.getID());
-		String accessURL = String.format("/get/%1$s/%2$s", roPID, datastream
-				.getID());
+		String accessURL = String.format("/get/%1$s/%2$s", roPID,
+				datastream.getID());
 
 		return new RepresentationFile(datastream.getID(),
-				datastream.getLabel(), datastream.getMIMEType(), datastream
-						.getSize(), accessURL);
+				datastream.getLabel(), datastream.getMIMEType(),
+				datastream.getSize(), accessURL);
 	}
 
 	private RepresentationPreservationObject getRepresentationPreservationObject(
@@ -1745,8 +1753,8 @@ public class BrowserHelper {
 
 			// Get PREMIS for the root file
 			if (rpObject.getRootFile() != null) {
-				rpObject.setRootFile(getFilePreservationObject(simleRPO
-						.getPid(), rpObject.getRootFile().getID()));
+				rpObject.setRootFile(getFilePreservationObject(
+						simleRPO.getPid(), rpObject.getRootFile().getID()));
 			}
 
 			// Get PREMIS for the part files
@@ -1757,8 +1765,8 @@ public class BrowserHelper {
 				RepresentationFilePreservationObject[] fullRepFiles = new RepresentationFilePreservationObject[partFiles.length];
 
 				for (int i = 0; i < partFiles.length; i++) {
-					fullRepFiles[i] = getFilePreservationObject(simleRPO
-							.getPid(), partFiles[i].getID());
+					fullRepFiles[i] = getFilePreservationObject(
+							simleRPO.getPid(), partFiles[i].getID());
 				}
 
 				rpObject.setPartFiles(fullRepFiles);
@@ -1767,9 +1775,7 @@ public class BrowserHelper {
 			// Get the SimpleEventPreservationObject of the events related with
 			// this RepresentationPreservationObject
 			Filter filter = new Filter();
-			filter
-					.add(new SimpleFilterParameter("targetPID", simleRPO
-							.getPid()));
+			filter.add(new SimpleFilterParameter("targetPID", simleRPO.getPid()));
 			List<SimpleEventPreservationObject> eventObjects = getSimpleEventPreservationObjects(new ContentAdapter(
 					filter, null, null));
 
@@ -1783,14 +1789,16 @@ public class BrowserHelper {
 			return rpObject;
 
 		} catch (IOException e) {
-			logger.debug("Error getting preservation object info - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Error getting preservation object info - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Error getting preservation object info - "
 							+ e.getMessage(), e);
 		} catch (PremisMetadataException e) {
-			logger.debug("Error getting preservation object info - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Error getting preservation object info - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Error getting preservation object info - "
 							+ e.getMessage(), e);
@@ -1830,14 +1838,16 @@ public class BrowserHelper {
 			return premisObjectHelper.getEventPreservationObject(simpleEPO);
 
 		} catch (IOException e) {
-			logger.debug("Error getting preservation object info - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Error getting preservation object info - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Error getting preservation object info - "
 							+ e.getMessage(), e);
 		} catch (PremisMetadataException e) {
-			logger.debug("Error getting preservation object info - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Error getting preservation object info - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Error getting preservation object info - "
 							+ e.getMessage(), e);
@@ -1863,14 +1873,16 @@ public class BrowserHelper {
 			return premisObjectHelper.getAgentPreservationObject(pObject);
 
 		} catch (IOException e) {
-			logger.debug("Error getting preservation object info - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Error getting preservation object info - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Error getting preservation object info - "
 							+ e.getMessage(), e);
 		} catch (PremisMetadataException e) {
-			logger.debug("Error getting preservation object info - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Error getting preservation object info - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Error getting preservation object info - "
 							+ e.getMessage(), e);
@@ -1923,14 +1935,16 @@ public class BrowserHelper {
 			return filter;
 
 		} catch (UserManagementException e) {
-			logger.debug("Exception accessing producer user information - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Exception accessing producer user information - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Exception accessing producer user information - "
 							+ e.getMessage(), e);
 		} catch (RODAServiceException e) {
-			logger.debug("Exception accessing producer user information - "
-					+ e.getMessage(), e);
+			logger.debug(
+					"Exception accessing producer user information - "
+							+ e.getMessage(), e);
 			throw new BrowserException(
 					"Exception accessing producer user information - "
 							+ e.getMessage(), e);
