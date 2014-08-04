@@ -1144,7 +1144,7 @@ public class IngestionUtils {
 								+ new String(new Base64().encode(base));
 						uc.setRequestProperty("Authorization",
 								authorizationString);
-					} else if(uri.getHost().equals("roda.scape.keep.pt")) {
+					} else if (uri.getHost().equals("roda.scape.keep.pt")) {
 						// TODO CHANGE THIS HORRIBLE HARDCODED IF!
 						// and correctly detect self-links
 						String selfPassword = "admin:QzbUmO+5";
@@ -1156,10 +1156,12 @@ public class IngestionUtils {
 					}
 
 					IOUtils.copy(uc.getInputStream(), new FileOutputStream(f));
+					final String mimetype = StringUtils
+							.isNotBlank(file.getMimetype()) ? file
+							.getMimetype() : "application/octet-stream";
 					RepresentationFile rFile = new RepresentationFile(file
-							.getIdentifier().getValue(), f.getName(),
-							"application/octet-stream", f.length(), f.toURI()
-									.toURL().toExternalForm());
+							.getIdentifier().getValue(), f.getName(), mimetype,
+							f.length(), f.toURI().toURL().toExternalForm());
 					newRepresentationObject.addPartFile(rFile);
 					representationFilesToUpload.add(rFile);
 				} catch (Exception e) {
