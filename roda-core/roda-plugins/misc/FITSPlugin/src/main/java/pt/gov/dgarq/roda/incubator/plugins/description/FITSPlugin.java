@@ -399,6 +399,7 @@ public class FITSPlugin extends AbstractPlugin {
 			// grab file original name, access url and size
 			String originalName = repFile.getOriginalName();
 			String accessURL = repFile.getAccessURL();
+			
 			long size = repFile.getSize();
 			if ("".equals(originalName) || originalName.length() < 3) {
 				originalName = "_" + new Date().getTime() + "_";
@@ -424,9 +425,20 @@ public class FITSPlugin extends AbstractPlugin {
 			if (exitValue == 0) {
 				// if FITS was successfully executed, change FITS information to
 				// comply with SCAPE needs
+				
+				
+				SimpleRepresentationObject sro = browserService.getSimpleRepresentationObject(pid);
+				
+				
+				String parentPID = sro.getDescriptionObjectPID();
+				
+				String repID = sro.getId();
+				
+				
 				executionResult = changeInfoInFITSOutput(fitsIntermediateFile,
 						fitsIntermediateFile.replaceFirst("fits$", "xml"),
-						rodaCoreURL + accessURL, isSroOriginal);
+						parentPID+"/"+repID+"/"+repFile.getId(), isSroOriginal);
+				
 			} else {
 				executionResult = "Error executing FITS script on file with ID \""
 						+ repFile.getId() + "\"";
@@ -447,6 +459,14 @@ public class FITSPlugin extends AbstractPlugin {
 		} catch (InterruptedException e) {
 			LOGGER.error(e);
 			executionResult = "Error processing representation file with PID \""
+					+ pid + "\"";
+		} catch (BrowserException e) {
+			LOGGER.error(e);
+			executionResult = "Error getting parent description object pid \""
+					+ pid + "\"";
+		} catch (NoSuchRODAObjectException e) {
+			LOGGER.error(e);
+			executionResult = "Error getting parent description object pid \""
 					+ pid + "\"";
 		} finally {
 			if (tempFile != null && !tempFile.delete()
