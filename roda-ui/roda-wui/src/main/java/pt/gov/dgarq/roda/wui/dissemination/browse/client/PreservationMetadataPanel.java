@@ -9,11 +9,13 @@ import java.util.List;
 import pt.gov.dgarq.roda.core.data.SimpleDescriptionObject;
 import pt.gov.dgarq.roda.wui.common.client.ClientLogger;
 import pt.gov.dgarq.roda.wui.common.client.widgets.LoadingPopup;
+import pt.gov.dgarq.roda.wui.common.client.widgets.MessagePopup;
 import pt.gov.dgarq.roda.wui.dissemination.browse.client.TimelineInfo.HotZone;
 import pt.gov.dgarq.roda.wui.dissemination.browse.client.TimelineInfo.Phase;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.ChangeListener;
 import com.google.gwt.user.client.ui.Composite;
@@ -236,10 +238,19 @@ public class PreservationMetadataPanel extends Composite {
 
 					public void onSuccess(TimelineInfo timelineInfo) {
 						PreservationMetadataPanel.this.timelineInfo = timelineInfo;
-						timelineRender = new PreservationTimeLineRender(
-								timelineInfo, DateTime.YEAR(), DateTime.YEAR());
-						update();
-						loading.hide();
+						try {
+							timelineRender = new PreservationTimeLineRender(
+									timelineInfo, DateTime.YEAR(), DateTime
+											.YEAR());
+							update();
+						} catch (Throwable e) {
+							MessagePopup.showError(e.getClass().getName()
+									+ ": " + e.getMessage());
+							logger.error("Error getting preservation timeline",
+									e);
+						} finally {
+							loading.hide();
+						}
 					}
 
 				});

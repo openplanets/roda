@@ -52,7 +52,7 @@ public class FileResource {
 				
 				for(RepresentationObject ro : representationObjects){
 					logger.debug("RO ID:"+ro.getId());
-					if(ro.getId().equalsIgnoreCase(representationID)){
+					if(ro.getId().equalsIgnoreCase(representationID) || ro.getPid().equalsIgnoreCase(representationID)){
 						representationFound=true;
 						if(ro.getRootFile()!=null){
 							if(ro.getRootFile().getId().equalsIgnoreCase(fileID)){

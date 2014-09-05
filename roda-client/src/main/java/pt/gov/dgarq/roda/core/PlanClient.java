@@ -120,7 +120,12 @@ public File retrievePlan(String planID) throws MalformedURLException {
         throw new RuntimeException("Failed : HTTP error code : " + response.getStatus());
     }
     File s= response.getEntity(File.class);
-    return s;
+    
+    String tempDir = System.getProperty("java.io.tmpdir");
+    File tempFile = new File(tempDir,planID);
+    s.renameTo(tempFile);
+    
+    return tempFile;
 }
   
 

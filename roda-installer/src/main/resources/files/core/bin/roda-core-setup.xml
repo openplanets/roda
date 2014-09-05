@@ -134,6 +134,7 @@
 		<replace file="../config/roda-core.properties" token="LDAP_USERS_DN" value="${env.LDAP_USERS_DN}" />
 		<replace file="../config/roda-core.properties" token="LDAP_GROUPS_DN" value="${env.LDAP_GROUPS_DN}" />
 		<replace file="../config/roda-core.properties" token="LDAP_ROLES_DN" value="${env.LDAP_ROLES_DN}" />
+		<replace file="../config/roda-core.properties" token="RODACORE_PUBLIC_HOSTNAME" value="${env.RODACORE_PUBLIC_HOSTNAME}" />
 	</target>
 
 	<target name="core-plugins">

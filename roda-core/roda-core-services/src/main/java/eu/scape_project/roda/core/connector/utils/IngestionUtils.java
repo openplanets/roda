@@ -17,18 +17,22 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+import org.apache.xerces.dom.ElementNSImpl;
 import org.w3c.util.DateParser;
 
-import pt.gov.dgarq.roda.common.FormatUtility;
 import pt.gov.dgarq.roda.core.BrowserHelper;
 import pt.gov.dgarq.roda.core.EditorHelper;
 import pt.gov.dgarq.roda.core.IngestHelper;
+import pt.gov.dgarq.roda.core.RodaWebApplication;
 import pt.gov.dgarq.roda.core.common.BrowserException;
 import pt.gov.dgarq.roda.core.common.EditorException;
 import pt.gov.dgarq.roda.core.common.IngestException;
@@ -44,12 +48,16 @@ import pt.gov.dgarq.roda.core.data.Report;
 import pt.gov.dgarq.roda.core.data.ReportItem;
 import pt.gov.dgarq.roda.core.data.RepresentationFile;
 import pt.gov.dgarq.roda.core.data.RepresentationObject;
+import pt.gov.dgarq.roda.core.data.RepresentationPreservationObject;
 import pt.gov.dgarq.roda.core.fedora.FedoraClientException;
 import pt.gov.dgarq.roda.core.metadata.eadc.EadCMetadataException;
 import pt.gov.dgarq.roda.core.reports.ReportManager;
 import pt.gov.dgarq.roda.core.reports.ReportManagerException;
 import pt.gov.dgarq.roda.core.reports.ReportRegistryException;
 import pt.gov.dgarq.roda.util.TempDir;
+import scape.premis.EventComplexType;
+import scape.premis.EventOutcomeDetailComplexType;
+import scape.premis.LinkingObjectIdentifierComplexType;
 import eu.scape_project.model.IntellectualEntity;
 import eu.scape_project.model.Representation;
 import eu.scape_project.util.ScapeMarshaller;
@@ -60,8 +68,36 @@ public class IngestionUtils {
 	private static Map<String, IntellectualEntity> statusIDToEntityMapping;
 
 	private static IngestionUtils ingestionUtils;
+	private String corePublicHostname = "localhost";
+	private String coreAdminUsername = "admin";
+	private String coreAdminPassword = "roda";
+	
 
-	public String getStatusIDFromEntityID(String entityID) {
+	public String getCoreAdminPassword() {
+    return coreAdminPassword;
+  }
+
+  public void setCoreAdminPassword(String coreAdminPassword) {
+    this.coreAdminPassword = coreAdminPassword;
+  }
+
+  public String getCoreAdminUsername() {
+    return coreAdminUsername;
+  }
+
+  public void setCoreAdminUsername(String coreAdminUsername) {
+    this.coreAdminUsername = coreAdminUsername;
+  }
+
+  public String getCorePublicHostname() {
+    return corePublicHostname;
+  }
+
+  public void setCorePublicHostname(String corePublicHostname) {
+    this.corePublicHostname = corePublicHostname;
+  }
+
+  public String getStatusIDFromEntityID(String entityID) {
 		if (statusIDToEntityMapping != null) {
 			for (Map.Entry<String, IntellectualEntity> entry : statusIDToEntityMapping
 					.entrySet()) {
@@ -100,6 +136,20 @@ public class IngestionUtils {
 	public synchronized static IngestionUtils getInstance() {
 		if (ingestionUtils == null) {
 			ingestionUtils = new IngestionUtils();
+			try {
+			  Configuration configuration = RodaWebApplication.getConfiguration(IngestionUtils.class, "roda-core.properties");
+			  if(StringUtils.isNotBlank(configuration.getString("corePublicHostname"))){
+			    ingestionUtils.setCorePublicHostname(configuration.getString("corePublicHostname"));
+			  }
+			  if(StringUtils.isNotBlank(configuration.getString("adminUsername"))){
+                            ingestionUtils.setCoreAdminUsername(configuration.getString("adminUsername"));
+                          }
+			  if(StringUtils.isNotBlank(configuration.getString("adminPassword"))){
+                            ingestionUtils.setCoreAdminPassword(configuration.getString("adminPassword"));
+                          }
+                        } catch (ConfigurationException e) {
+                          logger.error(e);
+                        }
 		}
 		return ingestionUtils;
 	}
@@ -234,13 +284,12 @@ public class IngestionUtils {
 									IOUtils.copy(file.getUri().toURL()
 											.openStream(),
 											new FileOutputStream(f));
-									String mimetype = FormatUtility
-											.getMimetype(f);
+									final String mimetype = StringUtils.isNotBlank(file.getMimetype()) ? file.getMimetype()
+							                    : "application/octet-stream";
 									RepresentationFile rFile = new RepresentationFile(
 											file.getIdentifier().getValue(),
 											f.getName(),
-											mimetype == null ? "application/octet-stream"
-													: mimetype, f.length(), f
+											mimetype, f.length(), f
 													.toURI().toURL()
 													.toExternalForm());
 									logger.debug("PartFile ID: "
@@ -601,7 +650,7 @@ public class IngestionUtils {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				ScapeMarshaller.newInstance().serialize(
 						entity.getDescriptive(), bos);
-				String tempURL = browser.getFedoraClientUtility()
+				browser.getFedoraClientUtility()
 						.temporaryUpload(bos.toByteArray());
 				browser.getFedoraClientUtility()
 						.getAPIM()
@@ -652,13 +701,12 @@ public class IngestionUtils {
 									IOUtils.copy(file.getUri().toURL()
 											.openStream(),
 											new FileOutputStream(f));
-									String mimetype = FormatUtility
-											.getMimetype(f);
+									final String mimetype = StringUtils.isNotBlank(file.getMimetype()) ? file.getMimetype()
+                                                                          : "application/octet-stream";
 									RepresentationFile rFile = new RepresentationFile(
 											file.getIdentifier().getValue(),
 											f.getName(),
-											mimetype == null ? "application/octet-stream"
-													: mimetype, f.length(), f
+											mimetype, f.length(), f
 													.toURI().toURL()
 													.toExternalForm());
 									logger.debug("Adding PartFile "
@@ -1088,9 +1136,11 @@ public class IngestionUtils {
 					File f = new File(temp, fileName);
 					IOUtils.copy(file.getUri().toURL().openStream(),
 							new FileOutputStream(f));
+					final String mimetype = StringUtils.isNotBlank(file.getMimetype()) ? file.getMimetype()
+                                          : "application/octet-stream";
 					RepresentationFile rFile = new RepresentationFile(file
-							.getIdentifier().getValue(), f.getName(),
-							"application/octet-stream", f.length(), f.toURI()
+							.getIdentifier().getValue(), file.getFilename(),
+							mimetype, f.length(), f.toURI()
 									.toURL().toExternalForm());
 					newRepresentationObject.addPartFile(rFile);
 					representationFilesToUpload.add(rFile);
@@ -1104,7 +1154,7 @@ public class IngestionUtils {
 		}
 		newRepresentationObject.setType(RepresentationObject.UNKNOWN);
 		newRepresentationObject
-				.setStatuses(new String[] { RepresentationObject.STATUS_ORIGINAL });
+				.setStatuses(new String[] { RepresentationObject.STATUS_NORMALIZED });
 		newRepresentationObject.setDescriptionObjectPID(descriptionObjectPid);
 		String rObjectPID = ingest
 				.createRepresentationObject(newRepresentationObject);
@@ -1113,18 +1163,25 @@ public class IngestionUtils {
 			uploader.uploadRepresentationFile(rObjectPID, rf);
 		}
 		logger.debug("End of upload");
-
+		
 	}
 
 	public String createRepresentation(String descriptionObjectPid,
-			RepresentationObject newRepresentationObject, IngestHelper ingest,
-			Uploader uploader, List<eu.scape_project.model.File> files)
+			Representation newRepresentation, IngestHelper ingest,
+			Uploader uploader, BrowserHelper browser)
 			throws IOException, EditorException, NoSuchRODAObjectException,
-			UploadException {
+			UploadException, DataConnectorException {
 		File temp = TempDir.createUniqueTemporaryDirectory("representations");
+		List<eu.scape_project.model.File> files = newRepresentation.getFiles();
+		
+		// instantiate RO and list of files (associated to this representation) to be uploaded
+		RepresentationObject newRepresentationObject = new RepresentationObject();
 		List<RepresentationFile> representationFilesToUpload = new ArrayList<RepresentationFile>();
+		
 		if (files != null && files.size() > 0) {
-
+		  
+		        // for each file, download it and create a representationfile with it
+		        int i=0;
 			for (eu.scape_project.model.File file : files) {
 				try {
 					String fileName = file.getFilename();
@@ -1144,10 +1201,8 @@ public class IngestionUtils {
 								+ new String(new Base64().encode(base));
 						uc.setRequestProperty("Authorization",
 								authorizationString);
-					} else if (uri.getHost().equals("roda.scape.keep.pt")) {
-						// TODO CHANGE THIS HORRIBLE HARDCODED IF!
-						// and correctly detect self-links
-						String selfPassword = "admin:QzbUmO+5";
+					} else if (uri.getHost().equalsIgnoreCase(corePublicHostname)) {
+						String selfPassword = coreAdminUsername + ":" + coreAdminPassword;
 						byte[] base = selfPassword.getBytes();
 						String authorizationString = "Basic "
 								+ new String(new Base64().encode(base));
@@ -1156,13 +1211,23 @@ public class IngestionUtils {
 					}
 
 					IOUtils.copy(uc.getInputStream(), new FileOutputStream(f));
+					
 					final String mimetype = StringUtils
 							.isNotBlank(file.getMimetype()) ? file
 							.getMimetype() : "application/octet-stream";
+					String originalFilename = (file.getFilename()==null)? file.getIdentifier().getValue() : file.getFilename();
 					RepresentationFile rFile = new RepresentationFile(file
-							.getIdentifier().getValue(), f.getName(), mimetype,
+							.getIdentifier().getValue(), originalFilename , mimetype,
 							f.length(), f.toURI().toURL().toExternalForm());
-					newRepresentationObject.addPartFile(rFile);
+					
+					if(i==0){
+					  logger.debug("ROOT: " + rFile.toString());
+					  newRepresentationObject.setRootFile(rFile);
+					  i++;
+					}else{
+					  logger.debug("PART: " + rFile.toString());
+					  newRepresentationObject.addPartFile(rFile);
+					}
 					representationFilesToUpload.add(rFile);
 				} catch (Exception e) {
 					logger.error("Error while getting file from URL:"
@@ -1172,25 +1237,101 @@ public class IngestionUtils {
 
 			}
 		}
+		
+		// process premis information to retrieve original representation pid and other preservation metadata to be created
+		String originalROPID = null;
+	        JAXBElement<scape.premis.PremisComplexType> premis = (JAXBElement<scape.premis.PremisComplexType>)newRepresentation.getProvenance();
+                List<EventComplexType> eventList = premis.getValue().getEvent();
+                
+                AgentPreservationObject agentPO=null;
+                EventPreservationObject eventPO = null;
+                
+                for (EventComplexType event : eventList) {
+                  
+                  System.out.println(event.getEventType()+"\n"+event.getEventDateTime()+"\n"+event.getEventDetail());
+                  // TODO collect preservationobjectevents
+                  
+                  agentPO = new AgentPreservationObject();
+                  agentPO.setAgentType(AgentPreservationObject.PRESERVATION_AGENT_TYPE_DATACONNECTOR);
+                  agentPO.setAgentName("DATA CONNECTOR");
+                
+                  eventPO = new EventPreservationObject();
+                  eventPO.setEventDetail(event.getEventDetail());
+                  eventPO.setAgentRole(EventPreservationObject.PRESERVATION_EVENT_TYPE_MIGRATION);
+//                  eventPO.setEventType(EventPreservationObject.PRESERVATION_EVENT_TYPE_DATACONNECTOR_INGESTION);
+                  eventPO.setEventType(EventPreservationObject.PRESERVATION_EVENT_TYPE_MIGRATION);
+                  if(event.getEventOutcomeInformation().size()>0){
+                    
+                    List<JAXBElement<?>> content = event.getEventOutcomeInformation().get(0).getContent();
+                    for (JAXBElement<?> jaxbElement : content) {
+                      if(jaxbElement.getDeclaredType() == String.class){
+                        eventPO.setOutcome((String) jaxbElement.getValue());
+                      }else if(jaxbElement.getDeclaredType() == EventOutcomeDetailComplexType.class){
+                        EventOutcomeDetailComplexType value = (EventOutcomeDetailComplexType)jaxbElement.getValue();
+                        eventPO.setOutcomeDetailNote(value.getEventOutcomeDetailNote());
+                        if (value.getEventOutcomeDetailExtension().size() > 0) {
+                          ElementNSImpl element = (ElementNSImpl) value.getEventOutcomeDetailExtension().get(0).getAny().get(0);
+                          // FIXME not currently grabbing the all content
+                          eventPO.setOutcomeDetailExtension(Utils.prettyPrintXML(element.getTextContent()));
+                        }else{
+                          eventPO.setOutcomeDetailExtension("no detail");
+                        }
+                      }
+                    }
+                  }else{
+                    eventPO=null;
+                  }
+                  
+                  
+                  for (LinkingObjectIdentifierComplexType linkingObject : event.getLinkingObjectIdentifier() ) {
+                    
+                    if (originalROPID == null 
+                      && StringUtils.isNotBlank(linkingObject.getLinkingObjectIdentifierType())
+                      && StringUtils.isNotBlank(linkingObject.getLinkingObjectIdentifierValue())
+                      && linkingObject.getLinkingObjectRole()!=null 
+                      && linkingObject.getLinkingObjectRole().contains("target")
+                      && linkingObject.getLinkingObjectIdentifierType().equals("RODAObjectPID")){
+                      
+                      originalROPID = linkingObject.getLinkingObjectIdentifierValue();
+                      break;
+                    }
+                    
+                  }
+                }
+                
+                if(agentPO!=null && eventPO!=null){
+                  logger.debug(agentPO.toString());
+                  logger.debug(eventPO.toString());
+                }
+                
+                if(originalROPID == null){
+                  throw new DataConnectorException("Cannot create representation as there is no information about the original representation (/representation/premis/event/linkingObjectIdentifier/)");
+                }
+		
+		// grab original representation pid from premis metadata and use the type of the original representation in this new one
 		newRepresentationObject.setType(RepresentationObject.UNKNOWN);
 		newRepresentationObject
-				.setStatuses(new String[] { RepresentationObject.STATUS_ORIGINAL });
+				.setStatuses(new String[] { RepresentationObject.STATUS_NORMALIZED });
 		newRepresentationObject.setDescriptionObjectPID(descriptionObjectPid);
-		String rObjectPID = ingest
+                newRepresentationObject.setId(newRepresentation.getIdentifier().getValue());
+                newRepresentationObject.setLabel(newRepresentation.getIdentifier().getValue());
+		
+		// create the new representationobject 
+		String newROPID = ingest
 				.createRepresentationObject(newRepresentationObject);
+		
+		// upload all the representationfiles
 		for (RepresentationFile rf : representationFilesToUpload) {
 			logger.debug("Uploading RepresentationFile " + rf.getId());
-			uploader.uploadRepresentationFile(rObjectPID, rf);
+			uploader.uploadRepresentationFile(newROPID, rf);
 		}
 		logger.debug("End of upload");
-		return rObjectPID;
+		
+		// register derivation event (connecting original representation and new one)
+                ingest.registerDerivationEvent(originalROPID, newROPID, eventPO, agentPO, true);
+
+		return newROPID;
 
 	}
 
-	public static void main(String[] args) {
-		URI uri = URI
-				.create("https://wfrun_b44f9e5e-8e0f-41e6-8ea8-78146bce292a:bv0ds$KE@eric.rcs.manchester.ac.uk:8443/executor/rest/runs/b44f9e5e-8e0f-41e6-8ea8-78146bce292a/wd/staging/convert-to-tiff-622988790916070934534312733368869590.tiff");
-		System.out.println(uri.getUserInfo());
-
-	}
 }

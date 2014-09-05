@@ -16,6 +16,7 @@
 
 <xsl:output method="html" indent="yes" encoding="UTF-8" />
 <xsl:param name="downloadURL" />
+<xsl:param name="workflowSVG" />
 
 <xsl:template match="plato:plans">
 <html>
@@ -125,6 +126,14 @@
 			</fieldset>
 		</fieldset>
 	</xsl:for-each>
+</xsl:template>
+
+<xsl:template match="plato:preservationActionPlan">
+	<h2>Preservation Action Plan</h2>
+	<fieldset>
+		<xsl:value-of select="$workflowSVG" disable-output-escaping="yes" />
+	</fieldset>
+	
 </xsl:template>
 
 <xsl:template match="plato:requirementsDefinition">

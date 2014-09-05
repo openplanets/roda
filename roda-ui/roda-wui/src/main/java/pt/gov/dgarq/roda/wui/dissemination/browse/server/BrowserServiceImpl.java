@@ -1,5 +1,9 @@
 package pt.gov.dgarq.roda.wui.dissemination.browse.server;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringBufferInputStream;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.text.DateFormat;
@@ -9,14 +13,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.xml.transform.TransformerException;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
@@ -41,6 +49,7 @@ import pt.gov.dgarq.roda.core.data.adapter.filter.SimpleFilterParameter;
 import pt.gov.dgarq.roda.core.data.adapter.sort.Sorter;
 import pt.gov.dgarq.roda.core.data.adapter.sublist.Sublist;
 import pt.gov.dgarq.roda.core.stubs.Browser;
+import pt.gov.dgarq.roda.util.XsltUtility;
 import pt.gov.dgarq.roda.wui.common.server.ServerTools;
 import pt.gov.dgarq.roda.wui.dissemination.browse.client.BrowserService;
 import pt.gov.dgarq.roda.wui.dissemination.browse.client.DisseminationInfo;
@@ -66,6 +75,19 @@ public class BrowserServiceImpl extends RemoteServiceServlet implements
 	/**
 	 * 
 	 */
+	
+	private static final String xsl = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"  version=\"1.0\">"
+            + "<xsl:template match=\"planExecutionDetails\">"
+            + "<ul><xsl:apply-templates/></ul>"
+            + "</xsl:template>"
+            + "<xsl:template match=\"file\">"
+            + "<li>File <xsl:value-of select=\"@id\"/><br/> <xsl:apply-templates/></li>"
+            + "</xsl:template>"
+            + "<xsl:template match=\"qa\">"
+            + "* <a><xsl:attribute name=\"href\"><xsl:value-of select=\"@property\"/></xsl:attribute> <xsl:value-of select=\"@property\"/></a><xsl:value-of select=\".\"/><br/>"
+            + "</xsl:template>"
+            + "</xsl:stylesheet>";
+	
 	private static final long serialVersionUID = 1L;
 
 	static final String FONDLIST_PAGESIZE = "10";
@@ -559,13 +581,14 @@ public class BrowserServiceImpl extends RemoteServiceServlet implements
 						+ ": </strong>" + pEvent.getOutcome() + "<br/>";
 			}
 			
-			if (!StringUtils.isBlank(pEvent.getOutcomeDetailExtension())) {
-				if(pEvent.getOutcomeDetailExtension().contains("Plan:")){
+			String outcomeDetailExtension = pEvent.getOutcomeDetailExtension();
+			if (!StringUtils.isBlank(outcomeDetailExtension)) {
+				if(outcomeDetailExtension.contains("Plan:")){
 					 Pattern pattern = Pattern.compile("\\[Plan:(.*)\\]");
-					 Matcher m = pattern.matcher(pEvent.getOutcomeDetailExtension());
+					 Matcher m = pattern.matcher(outcomeDetailExtension);
 					 if (m.find()) {
 						 String planID = m.group(1);
-						 String originalOutcome = pEvent.getOutcomeDetailExtension();
+						 String originalOutcome = outcomeDetailExtension;
 						 String planHref = "<a href='/SCAPEPlanView?planID="+planID+"' target='_BLANK'>"+planID+"</a>";
 						 content += "<strong>"
 									+ browserServiceMessages.getString("plan")
@@ -573,6 +596,16 @@ public class BrowserServiceImpl extends RemoteServiceServlet implements
 						 String updatedOutcome = originalOutcome.replace("[Plan:"+planID+"]", "");
 						 pEvent.setOutcomeDetailExtension(updatedOutcome);
 					 }
+				}else if(outcomeDetailExtension.contains("plan=\"")){
+					Pattern p = Pattern.compile("plan=\"([^\"]+)\"");
+					Matcher matcher = p.matcher(outcomeDetailExtension);
+					if(matcher.find()){
+						String planID = matcher.group(1);
+						String planHref = "<a href='/SCAPEPlanView?planID="+planID+"' target='_BLANK'>"+planID+"</a><br/>";
+						content += "<strong>"
+								+ browserServiceMessages.getString("plan")
+								+ ": </strong>" + planHref + "<br/>";
+					}
 				}
 			}
 			
@@ -580,8 +613,30 @@ public class BrowserServiceImpl extends RemoteServiceServlet implements
 				content += "<strong>" + pEvent.getOutcomeDetailNote()
 						+ ": </strong>";
 			}
-			if (!StringUtils.isBlank(pEvent.getOutcomeDetailExtension())) {
-				content += truncate(pEvent.getOutcomeDetailExtension(), 400);
+			if (!StringUtils.isBlank(outcomeDetailExtension)) {
+				
+//				String outcomeDetailExtensionToTransform = outcomeDetailExtension.replaceFirst("(?s).+<!\\[CDATA\\[","").replaceFirst("(?s)\\]\\]></p>", "");
+//				
+//				logger.info(">> "+outcomeDetailExtensionToTransform);
+//				
+//				InputStream inputStream = new StringBufferInputStream(outcomeDetailExtensionToTransform);
+//                OutputStream outputStream = new ByteArrayOutputStream();
+//                Map<String,Object> hashMap = new HashMap<String,Object>();
+//                
+//                String finalString;
+//                
+//                try {
+//					XsltUtility.applyTransformation(xsl,hashMap, inputStream, outputStream);
+//					finalString = new String(((ByteArrayOutputStream)outputStream).toByteArray()).replaceFirst(".*<ul>", "<ul>");
+//					
+//					logger.info(">>> "+finalString);
+//				} catch (TransformerException e) {
+//					finalString = outcomeDetailExtension;
+//				}
+//				
+//				logger.info(truncate(finalString, 400));
+				
+				content += truncate(outcomeDetailExtension, 400);
 			}
 			
 			

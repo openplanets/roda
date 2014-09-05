@@ -4,38 +4,32 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
-import org.antlr.grammar.v3.ANTLRv3Parser.throwsSpec_return;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.log4j.Logger;
 
-import eu.scape_project.model.File;
-import eu.scape_project.model.Identifier;
-import eu.scape_project.model.LifecycleState;
-import eu.scape_project.model.LifecycleState.State;
-import eu.scape_project.model.Representation;
-import eu.scape_project.util.ScapeMarshaller;
-import fedora.client.DataStream;
-import fedora.server.types.gen.Datastream;
 import pt.gov.dgarq.roda.core.BrowserHelper;
 import pt.gov.dgarq.roda.core.EditorHelper;
 import pt.gov.dgarq.roda.core.common.NoSuchRODAObjectException;
@@ -53,6 +47,12 @@ import scape.dc.ElementContainer;
 import scape.mix20.Mix;
 import scape.premis.PremisComplexType;
 import scape.text.TextMD;
+import eu.scape_project.model.File;
+import eu.scape_project.model.Identifier;
+import eu.scape_project.model.LifecycleState;
+import eu.scape_project.model.LifecycleState.State;
+import eu.scape_project.model.Representation;
+import fedora.server.types.gen.Datastream;
 
 public class Utils {
 	static final private Logger logger = Logger.getLogger(Utils.class);
@@ -273,7 +273,7 @@ public class Utils {
 		String date = null;
 		
 		if(datastreamHistory==null){
-			logger.debug("Datastream history nulll");
+			logger.debug("Datastream history null");
 		}else{
 			logger.debug("Datastreamsize: "+datastreamHistory.length);
 		}
@@ -416,5 +416,38 @@ public class Utils {
 		public static Object extractMetadataFromRepresentationFile(RepresentationFile file, String metadataID) {
 			Mix m = new Mix();
 			return m;
+		}
+		
+		public static String prettyPrintXML(String xml) {
+		  String output = null;
+		  try {
+		    Source xmlInput = new StreamSource(new StringReader(xml));
+		    StringWriter stringWriter = new StringWriter();
+		    StreamResult xmlOutput = new StreamResult(stringWriter);
+		    TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		    Transformer transformer;
+		    
+		    transformer = transformerFactory.newTransformer();
+
+		    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+		    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION,"yes");
+		    transformer.transform(xmlInput, xmlOutput);
+
+		    output = xmlOutput.getWriter().toString();
+		  } catch (TransformerConfigurationException e) {
+		  } catch (TransformerException e) {
+		  }
+
+		  return output;
+		}
+		
+		public static String grabPlanIdFromPlanExecutionDetails(String planExecutionDetails){
+		  String output = null;
+		  Pattern p = Pattern.compile("plan=\"([^\"]+)\"");
+                  Matcher matcher = p.matcher(planExecutionDetails);
+                  if(matcher.find()){
+                    output = matcher.group(1);
+                  }
+                  return output;
 		}
 }

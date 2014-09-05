@@ -121,9 +121,9 @@ public class EntityResource {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				ScapeMarshaller.newInstance().serialize(intellectualEntity, bos,useRef);
 				
-				logger.debug("OUTPUT:");
+				logger.trace("OUTPUT:");
 				String output = bos.toString("UTF-8");
-				logger.debug(output);
+				logger.trace(output);
 				return Response.status(Status.OK).entity(output).header("Content-Type", MediaType.TEXT_XML).build();
 			}else{
 				logger.error("Unable to get helpers");

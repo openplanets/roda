@@ -19,7 +19,8 @@ public class AgentPreservationObject extends PreservationObject {
 	public static final String[] PRESERVATION_AGENT_TYPES = new String[] {
 			PRESERVATION_AGENT_TYPE_INGEST_TASK,
 			PRESERVATION_AGENT_TYPE_MIGRATOR,
-			PRESERVATION_AGENT_TYPE_FIXITY_CHECK_PLUGIN };
+			PRESERVATION_AGENT_TYPE_FIXITY_CHECK_PLUGIN,
+			PRESERVATION_AGENT_TYPE_DATACONNECTOR};
 
 	/**
 	 * Preservation Object type - Agent

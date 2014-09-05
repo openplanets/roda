@@ -35,6 +35,7 @@ import pt.gov.dgarq.roda.core.data.Report;
 import pt.gov.dgarq.roda.core.data.ReportItem;
 import pt.gov.dgarq.roda.core.data.RepresentationFile;
 import pt.gov.dgarq.roda.core.data.RepresentationObject;
+import pt.gov.dgarq.roda.core.data.SimpleDescriptionObject;
 import pt.gov.dgarq.roda.core.data.SimpleRepresentationObject;
 import pt.gov.dgarq.roda.core.data.adapter.ContentAdapter;
 import pt.gov.dgarq.roda.core.data.adapter.filter.Filter;
@@ -285,19 +286,60 @@ public class FITSPlugin extends AbstractPlugin {
 			adapter.setFilter(new Filter(
 					new FilterParameter[] { new RangeFilterParameter(
 							"createdDate", lastPluginExecDate, null) }));
-			SimpleRepresentationObject[] sros = browserService
-					.getSimpleRepresentationObjects(adapter);
+			
 			dateAfterRetrievingRepresentationsList = new Date();
-
-			// process each representation
-			for (SimpleRepresentationObject sro : sros) {
-				processSimpleRepresentationObjectWithFITS(sro, outputDirectory,
-						fitsSh, rodaCoreURL, report);
+			
+			
+//			SimpleRepresentationObject[] sros = browserService
+//					.getSimpleRepresentationObjects(adapter);
+			
+			
+			
+			
+			
+			SimpleDescriptionObject[] simpleDescriptionObjects = browserService
+					.getSimpleDescriptionObjects(null);
+			for (SimpleDescriptionObject simpleDescriptionObject : simpleDescriptionObjects) {
+				RepresentationObject[] doRepresentations = browserService
+						.getDORepresentations(simpleDescriptionObject.getPid());
+				boolean haveNormalizedRepresentation = false;
+				if (doRepresentations!= null && doRepresentations.length >= 1) {
+					for (RepresentationObject representationObject : doRepresentations) {
+						if (Arrays.asList(representationObject.getStatuses())
+								.contains(
+										RepresentationObject.STATUS_NORMALIZED)) {
+							haveNormalizedRepresentation = true;
+							processSimpleRepresentationObjectWithFITS(
+									representationObject, outputDirectory,
+									fitsSh, rodaCoreURL, report);
+							break;
+						}
+					}
+					if (!haveNormalizedRepresentation) {
+						processSimpleRepresentationObjectWithFITS(
+								doRepresentations[0], outputDirectory, fitsSh,
+								rodaCoreURL, report);
+					}
+				}
 			}
+			
+
+//			// process each representation
+//			for (SimpleRepresentationObject sro : sros) {
+//				if (Arrays.asList(sro.getStatuses()).contains(
+//						RepresentationObject.STATUS_NORMALIZED)) {
+//					processSimpleRepresentationObjectWithFITS(sro,
+//							outputDirectory, fitsSh, rodaCoreURL, report);
+//				}else{
+//					
+//				}
+//			}
 
 		} catch (BrowserException e) {
 			LOGGER.error(e);
 		} catch (RemoteException e) {
+			LOGGER.error(e);
+		} catch (NoSuchRODAObjectException e) {
 			LOGGER.error(e);
 		}
 	}
@@ -316,6 +358,7 @@ public class FITSPlugin extends AbstractPlugin {
 			RepresentationObject representationObject = browserService
 					.getRepresentationObject(sro.getPid());
 			String roPID = representationObject.getPid();
+			String doPID = representationObject.getDescriptionObjectPID();
 			String newDirectory = outputDirectory + roPID;
 
 			// determine if representation is original or not
@@ -333,7 +376,7 @@ public class FITSPlugin extends AbstractPlugin {
 						.getRootFile();
 
 				// process the root file and store the result in the report
-				String outcome = processRepresentationFileWithFITS(rootFile,
+				String outcome = processRepresentationFileWithFITS(rootFile, doPID,
 						roPID, outputDirectory, newDirectory, fitsSh,
 						rodaCoreURL, isSroOriginal);
 				if (outcome != null) {
@@ -352,7 +395,7 @@ public class FITSPlugin extends AbstractPlugin {
 				// process all the other files and store the result in the
 				// report
 				for (RepresentationFile partFile : partFiles) {
-					outcome = processRepresentationFileWithFITS(partFile,
+					outcome = processRepresentationFileWithFITS(partFile, doPID,
 							roPID, outputDirectory, newDirectory, fitsSh,
 							rodaCoreURL, isSroOriginal);
 					if (outcome != null) {
@@ -390,7 +433,7 @@ public class FITSPlugin extends AbstractPlugin {
 	}
 
 	private String processRepresentationFileWithFITS(
-			RepresentationFile repFile, String pid, String outputDirectory,
+			RepresentationFile repFile, String doPID, String pid, String outputDirectory,
 			String newDirectory, String fitsSh, String rodaCoreURL,
 			boolean isSroOriginal) {
 		String executionResult = null;
@@ -424,9 +467,10 @@ public class FITSPlugin extends AbstractPlugin {
 			if (exitValue == 0) {
 				// if FITS was successfully executed, change FITS information to
 				// comply with SCAPE needs
+				accessURL = accessURL.replaceFirst("/get", doPID);
 				executionResult = changeInfoInFITSOutput(fitsIntermediateFile,
 						fitsIntermediateFile.replaceFirst("fits$", "xml"),
-						rodaCoreURL + accessURL, isSroOriginal);
+						accessURL, isSroOriginal);
 			} else {
 				executionResult = "Error executing FITS script on file with ID \""
 						+ repFile.getId() + "\"";

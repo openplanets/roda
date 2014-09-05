@@ -95,7 +95,7 @@ public class MetadataResource {
 				DescriptionObject o = Utils.findById(entityID, browser);
 				RepresentationObject representation = null;
 				for(RepresentationObject ro : browser.getDORepresentations(o.getPid())){
-					if(ro.getId().equalsIgnoreCase(representationID)){
+				        if(ro.getId().equalsIgnoreCase(representationID) || ro.getPid().equalsIgnoreCase(representationID)){
 						representation = ro;
 						break;
 					}	
@@ -138,7 +138,7 @@ public class MetadataResource {
 				DescriptionObject o = Utils.findById(entityID, browser);
 				RepresentationFile file = null;
 				for(RepresentationObject ro : browser.getDORepresentations(o.getPid())){
-					if(ro.getId().equalsIgnoreCase(representationID)){
+				        if(ro.getId().equalsIgnoreCase(representationID) || ro.getPid().equalsIgnoreCase(representationID)){
 						for(RepresentationFile rf : ro.getPartFiles()){
 							if(rf.getId().equalsIgnoreCase(fileID)){
 								file = rf;

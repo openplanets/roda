@@ -117,18 +117,13 @@ public class PlanResource {
 	}
 	
 	@GET
-	public Response getPlan(@PathParam("id") final String id, @QueryParam("noData")@DefaultValue("false") final String noData) {
+	public Response getPlan(@PathParam("id") final String id, @QueryParam("noData")@DefaultValue("false") final boolean noData) {
 		logger.debug("getPlan(id="+id+")");
 		try {
 
 			Plan plan = PlanManager.INSTANCE.getPlan(id);
-			
-			boolean nd=false;
-			if(noData.equalsIgnoreCase("true")){
-				nd=true;
-			}
-			
-			InputStream dataInputStream = plan.getDataInputStream(nd);
+						
+			InputStream dataInputStream = plan.getDataInputStream(noData);
 
 			logger.info("Plan "
 					+ id
